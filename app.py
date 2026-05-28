@@ -579,6 +579,93 @@ def inject_css():
         line-height: 1.5;
     }
 
+    /* ============ PRESET BUTTONS (Simulasi) ============ */
+    /* Marker wrapper sebelum tombol preset: <div class="preset-marker-{active|idle}"></div>.
+       Sibling-combinator selector di bawah menarget tombol Streamlit tepat
+       setelah marker tsb. Cara ini bypass keterbatasan Streamlit yang tidak
+       memberi kita class CSS langsung pada tombol. */
+    .preset-marker-active + div [data-testid="stBaseButton-secondary"],
+    .preset-marker-active + div button[kind="secondary"] {
+        background: linear-gradient(135deg, #DCFCE7 0%, #BBF7D0 100%) !important;
+        border: 2px solid #16A34A !important;
+        color: #14532D !important;
+        font-weight: 700 !important;
+        box-shadow: 0 4px 12px -2px rgba(22, 163, 74, 0.35) !important;
+        transform: translateY(-1px);
+    }
+    .preset-marker-idle + div [data-testid="stBaseButton-secondary"],
+    .preset-marker-idle + div button[kind="secondary"] {
+        transition: all 0.2s ease-in-out !important;
+    }
+    .preset-marker-idle + div [data-testid="stBaseButton-secondary"]:hover,
+    .preset-marker-idle + div button[kind="secondary"]:hover {
+        background: #F0FDF4 !important;
+        border-color: #86EFAC !important;
+        color: #166534 !important;
+    }
+
+    /* Reset button — outline merah lembut supaya beda dengan preset */
+    .reset-marker + div [data-testid="stBaseButton-secondary"],
+    .reset-marker + div button[kind="secondary"] {
+        background: #FFFFFF !important;
+        border: 1.5px solid #FCA5A5 !important;
+        color: #B91C1C !important;
+        font-weight: 600 !important;
+        transition: all 0.2s ease-in-out !important;
+    }
+    .reset-marker + div [data-testid="stBaseButton-secondary"]:hover,
+    .reset-marker + div button[kind="secondary"]:hover {
+        background: #FEF2F2 !important;
+        border-color: #EF4444 !important;
+    }
+
+    /* Badge preset aktif di header hasil */
+    .active-preset-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        background: #DCFCE7;
+        color: #166534;
+        font-size: 0.78rem;
+        font-weight: 600;
+        padding: 0.3rem 0.7rem;
+        border-radius: 999px;
+        border: 1px solid #86EFAC;
+        margin-bottom: 0.6rem;
+    }
+    .active-preset-badge .dot {
+        width: 0.5rem; height: 0.5rem; border-radius: 50%;
+        background: #16A34A;
+        box-shadow: 0 0 0 3px rgba(22,163,74,0.18);
+    }
+
+    /* Fade-in halus tiap kali hasil di-recompute */
+    @keyframes sim-fade-in {
+        from { opacity: 0; transform: translateY(4px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+    .sim-fade {
+        animation: sim-fade-in 0.25s ease-out;
+    }
+
+    /* Baris sub-indeks polutan di hasil */
+    .subindex-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.8rem;
+        padding: 0.35rem 0.6rem;
+        border-radius: 8px;
+        margin-bottom: 0.2rem;
+    }
+    .subindex-row.dominan {
+        background: #FEF3C7;
+        font-weight: 700;
+        color: #92400E;
+    }
+    .subindex-row .label { color: #475569; }
+    .subindex-row .val   { font-variant-numeric: tabular-nums; color: #0F172A; font-weight: 600; }
+
     /* ============ TABS WILAYAH ============ */
     .stTabs [data-baseweb="tab-list"] {
         gap: 0.5rem;
@@ -763,35 +850,78 @@ def kategori_dari_ispu(ispu):
     return "Berbahaya"
 
 
-def hitung_ispu(pm10, pm25, so2, co, o3, no2):
+# ─────────────────────────────────────────────────────────────────
+# ISPU sub-index breakpoints — PerMenLHK No. 14/2020
+# Tiap polutan punya 5 pita konsentrasi (Baik→Berbahaya) yang dipetakan
+# ke 5 pita indeks (0–50, 51–100, 101–200, 201–300, 301–500).
+# Konversi konsentrasi → sub-indeks pakai interpolasi linier per pita:
+#   I = ((Ia - Ib) / (Xa - Xb)) * (X - Xb) + Ib
+# Sub-indeks tertinggi di antara 6 polutan menjadi nilai ISPU final
+# dan menentukan kategori — polutan tersebut disebut "polutan dominan".
+# Cara ini konsisten dengan praktik pemerintah & badan lingkungan global,
+# dan menggantikan rumus linier naif yang membuat semua preset bias ke
+# kategori "Tidak Sehat".
+# ─────────────────────────────────────────────────────────────────
+ISPU_INDEX_BANDS = [(0, 50), (51, 100), (101, 200), (201, 300), (301, 500)]
+ISPU_CONC_BANDS = {
+    "pm25": [(0, 15.5),   (15.6, 55.4),   (55.5, 150.4),  (150.5, 250.4), (250.5, 500)],
+    "pm10": [(0, 50),     (51, 150),      (151, 350),     (351, 420),     (421, 500)],
+    "so2":  [(0, 52),     (53, 180),      (181, 400),     (401, 800),     (801, 1200)],
+    "co":   [(0, 4),      (4.001, 8),     (8.001, 15),    (15.001, 30),   (30.001, 45)],
+    "o3":   [(0, 120),    (121, 235),     (236, 400),     (401, 800),     (801, 1000)],
+    "no2":  [(0, 80),     (81, 200),      (201, 1130),    (1131, 2260),   (2261, 3000)],
+}
+
+
+def _ispu_subindex(polutan: str, x: float) -> float:
+    """Konversi konsentrasi satu polutan ke sub-indeks ISPU (0–500)."""
+    bands = ISPU_CONC_BANDS[polutan]
+    if x <= 0:
+        return 0.0
+    if x >= bands[-1][1]:
+        return 500.0
+    for i, (lo, hi) in enumerate(bands):
+        if lo <= x <= hi:
+            Ib, Ia = ISPU_INDEX_BANDS[i]
+            return ((Ia - Ib) / (hi - lo)) * (x - lo) + Ib
+    return 500.0
+
+
+def calculate_ispu_category(pm10, pm25, so2, co, o3, no2):
     """
-    Hitung nilai ISPU numerik + kategori (5 kelas) dari konsentrasi polutan.
-    Formula pendekatan sub-indeks: tiap polutan dinormalisasi ke skala ISPU,
-    nilai akhir = MAX dari semua sub-indeks (polutan paling dominan menentukan).
+    Hitung nilai ISPU + kategori sesuai PerMenLHK 14/2020.
 
-    Mengembalikan (nilai_ispu, kategori).
+    Returns: (nilai_ispu, kategori, polutan_dominan, dict_subindex_per_polutan)
     """
-    ispu_pm10 = (pm10 / 200) * 300
-    ispu_pm25 = (pm25 / 200) * 300
-    ispu_so2  = (so2 / 120) * 300
-    ispu_co   = (co / 80) * 300
-    ispu_o3   = (o3 / 120) * 300
-    ispu_no2  = (no2 / 120) * 300
+    subs = {
+        "pm10": _ispu_subindex("pm10", pm10),
+        "pm25": _ispu_subindex("pm25", pm25),
+        "so2":  _ispu_subindex("so2",  so2),
+        "co":   _ispu_subindex("co",   co),
+        "o3":   _ispu_subindex("o3",   o3),
+        "no2":  _ispu_subindex("no2",  no2),
+    }
+    final = max(subs.values())
+    dominan = max(subs, key=subs.get)
 
-    ispu_final = max(ispu_pm10, ispu_pm25, ispu_so2, ispu_co, ispu_o3, ispu_no2)
-
-    if ispu_final <= 50:
+    if final <= 50:
         kategori = "Baik"
-    elif ispu_final <= 100:
+    elif final <= 100:
         kategori = "Sedang"
-    elif ispu_final <= 200:
+    elif final <= 200:
         kategori = "Tidak Sehat"
-    elif ispu_final <= 300:
+    elif final <= 300:
         kategori = "Sangat Tidak Sehat"
     else:
         kategori = "Berbahaya"
 
-    return round(ispu_final, 2), kategori
+    return round(final, 1), kategori, dominan, subs
+
+
+def hitung_ispu(pm10, pm25, so2, co, o3, no2):
+    """Wrapper backward-compatible — hanya mengembalikan (nilai, kategori)."""
+    nilai, kategori, _, _ = calculate_ispu_category(pm10, pm25, so2, co, o3, no2)
+    return nilai, kategori
 
 
 # =================================================================
@@ -1776,6 +1906,117 @@ def page_detail_wilayah(data):
 # ================================================================
 # HALAMAN 3: SIMULASI PREDIKSI ISPU
 # ================================================================
+# ── Konfigurasi terpusat ───────────────────────────────────────
+# Default & preset disusun agar nilai ISPU yang dihitung dengan
+# calculate_ispu_category() jatuh tepat di kategori yang dimaksud
+# (sesuai breakpoint PerMenLHK No. 14/2020).
+SIM_DEFAULT_VALUES = {
+    "pm25": 25.0, "pm10": 40.0, "no2": 30.0,
+    "so2":  30.0, "co":   2.0,  "o3":  60.0,
+}
+
+# Preset: 5 skenario, satu per kategori ISPU.
+# Setiap preset dirancang agar polutan dominan jatuh di pita target,
+# sehingga ISPU final berada dalam rentang yang user inginkan.
+SIM_PRESETS = {
+    "Baik":               {"pm25": 10.0,  "pm10": 20.0,  "no2": 10.0,  "so2": 10.0,  "co": 1.0,  "o3": 20.0},
+    "Sedang":             {"pm25": 35.0,  "pm10": 60.0,  "no2": 20.0,  "so2": 25.0,  "co": 2.0,  "o3": 45.0},
+    "Tidak Sehat":        {"pm25": 90.0,  "pm10": 140.0, "no2": 60.0,  "so2": 70.0,  "co": 8.0,  "o3": 120.0},
+    "Sangat Tidak Sehat": {"pm25": 180.0, "pm10": 260.0, "no2": 150.0, "so2": 180.0, "co": 18.0, "o3": 220.0},
+    "Berbahaya":          {"pm25": 300.0, "pm10": 450.0, "no2": 300.0, "so2": 320.0, "co": 35.0, "o3": 400.0},
+}
+
+# Konfigurasi slider per polutan (min/max/step + metadata UI).
+# Max range diset agar memuat preset "Berbahaya" tanpa harus extend lagi.
+SIM_SLIDER_CONFIG = {
+    "pm25": {"label": "PM2.5", "info_key": "PM2.5", "min": 0.0, "max": 500.0, "step": 0.5, "unit": "µg/m³", "decimals": 2, "slider_key": "sl_pm25"},
+    "pm10": {"label": "PM10",  "info_key": "PM10",  "min": 0.0, "max": 500.0, "step": 0.5, "unit": "µg/m³", "decimals": 2, "slider_key": "sl_pm10"},
+    "no2":  {"label": "NO₂",   "info_key": "NO₂",   "min": 0.0, "max": 500.0, "step": 0.5, "unit": "µg/m³", "decimals": 2, "slider_key": "sl_no2"},
+    "so2":  {"label": "SO₂",   "info_key": "SO₂",   "min": 0.0, "max": 500.0, "step": 0.5, "unit": "µg/m³", "decimals": 2, "slider_key": "sl_so2"},
+    "co":   {"label": "CO",    "info_key": "CO",    "min": 0.0, "max": 50.0,  "step": 0.1, "unit": "mg/m³", "decimals": 2, "slider_key": "sl_co"},
+    "o3":   {"label": "O₃",    "info_key": "O₃",    "min": 0.0, "max": 500.0, "step": 0.5, "unit": "µg/m³", "decimals": 2, "slider_key": "sl_o3"},
+}
+
+POLUTAN_DISPLAY_NAME = {
+    "pm25": "PM2.5", "pm10": "PM10", "no2": "NO₂",
+    "so2":  "SO₂",   "co":   "CO",   "o3":  "O₃",
+}
+
+
+def _sim_init_state():
+    """Init session state untuk simulasi — idempoten, aman dipanggil tiap rerun."""
+    for pol, cfg in SIM_SLIDER_CONFIG.items():
+        if cfg["slider_key"] not in st.session_state:
+            st.session_state[cfg["slider_key"]] = float(SIM_DEFAULT_VALUES[pol])
+    if "sim_active_preset" not in st.session_state:
+        st.session_state["sim_active_preset"] = None
+    if "sim_model_choice" not in st.session_state:
+        st.session_state["sim_model_choice"] = "xgboost"
+
+
+def apply_preset(name: str):
+    """
+    Callback `on_click` untuk tombol preset.
+    Modifikasi session_state SEBELUM widget di-instantiate pada rerun berikutnya,
+    sehingga slider otomatis nge-snap ke nilai preset tanpa st.rerun() manual.
+    """
+    if name not in SIM_PRESETS:
+        return
+    preset = SIM_PRESETS[name]
+    for pol, val in preset.items():
+        st.session_state[SIM_SLIDER_CONFIG[pol]["slider_key"]] = float(val)
+    st.session_state["sim_active_preset"] = name
+
+
+def reset_simulation():
+    """
+    Callback `on_click` untuk tombol Reset.
+    Kembalikan semua slider ke default + hapus penanda preset aktif.
+    """
+    for pol, val in SIM_DEFAULT_VALUES.items():
+        st.session_state[SIM_SLIDER_CONFIG[pol]["slider_key"]] = float(val)
+    st.session_state["sim_active_preset"] = None
+
+
+def _detect_active_preset(current_vals: dict):
+    """
+    Sinkronisasi 2-arah: deteksi preset aktif dari nilai slider.
+    Jika user menggeser slider manual sehingga keluar dari preset,
+    badge highlight otomatis hilang.
+    """
+    for name, preset in SIM_PRESETS.items():
+        if all(abs(current_vals[k] - preset[k]) < 0.01 for k in preset):
+            return name
+    return None
+
+
+def _polutan_slider_block(pol_key: str):
+    """Render satu slider polutan + label header. Mengembalikan nilai terbaru."""
+    cfg = SIM_SLIDER_CONFIG[pol_key]
+    info = INFO_POLUTAN[cfg["info_key"]]
+    st.markdown(
+        f"<div style='display:flex; align-items:center; gap:0.4rem; font-weight:600; "
+        f"color:#0F172A; margin-bottom:0.1rem;'>"
+        f"<span style='width:0.7rem; height:0.7rem; border-radius:999px; "
+        f"background:{info['warna']};'></span>{cfg['label']}</div>"
+        f"<div style='font-size:0.78rem; color:#64748B; margin-bottom:0.3rem;'>"
+        f"{info['deskripsi_pendek']}</div>",
+        unsafe_allow_html=True,
+    )
+    val = st.slider(
+        cfg["label"], cfg["min"], cfg["max"],
+        value=float(st.session_state[cfg["slider_key"]]),
+        step=cfg["step"], key=cfg["slider_key"],
+        label_visibility="collapsed",
+    )
+    st.markdown(
+        f"<div style='text-align:right; font-size:0.8rem; color:#64748B;'>"
+        f"{val:.{cfg['decimals']}f} ({cfg['unit']})</div>",
+        unsafe_allow_html=True,
+    )
+    return val
+
+
 def page_simulasi(data):
     st.markdown(
         "<div class='page-title'>Simulasi Prediksi ISPU</div>"
@@ -1790,44 +2031,28 @@ def page_simulasi(data):
             <div class='step-title'>ⓘ Cara Menggunakan Simulasi</div>
             <div class='step-item'>
                 <div class='step-num'>1</div>
-                <div class='step-text'>Masukkan nilai konsentrasi 6 polutan sesuai satuan yang tertera.</div>
+                <div class='step-text'>Pilih preset skenario atau geser slider untuk mengatur konsentrasi polutan.</div>
             </div>
             <div class='step-item'>
                 <div class='step-num'>2</div>
-                <div class='step-text'>Klik tombol "Submit Simulasi" untuk melihat hasil prediksi.</div>
+                <div class='step-text'>Hasil ISPU dan kategori akan ter-update secara real-time di samping kanan.</div>
             </div>
             <div class='step-item'>
                 <div class='step-num'>3</div>
-                <div class='step-text'>Hasil prediksi menunjukkan kategori ISPU dan rekomendasi kesehatan.</div>
+                <div class='step-text'>Tekan "Reset" untuk mengembalikan semua slider ke kondisi awal.</div>
             </div>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-    # Initialize state
-    if "sim_values" not in st.session_state:
-        st.session_state["sim_values"] = {"pm25": 50.0, "pm10": 70.0, "no2": 25.0, "so2": 35.0, "co": 1.5, "o3": 50.0}
-    if "sim_hasil" not in st.session_state:
-        st.session_state["sim_hasil"] = None
-
-    # Preset handler — 5 preset, masing-masing menghasilkan 1 kategori ISPU
-    def apply_preset(name):
-        presets = {
-            "Udara Bersih":             {"pm25": 20.0, "pm10": 15.0, "no2": 10.0, "so2": 10.0, "co": 3.0,  "o3": 10.0},
-            "Udara Sedang":             {"pm25": 50.0, "pm10": 40.0, "no2": 28.0, "so2": 30.0, "co": 12.0, "o3": 28.0},
-            "Udara Tidak Sehat":        {"pm25": 100.0,"pm10": 90.0, "no2": 60.0, "so2": 55.0, "co": 30.0, "o3": 55.0},
-            "Udara Sangat Tidak Sehat": {"pm25": 167.0,"pm10": 150.0,"no2": 95.0, "so2": 95.0, "co": 55.0, "o3": 90.0},
-            "Udara Berbahaya":          {"pm25": 200.0,"pm10": 200.0,"no2": 140.0,"so2": 130.0,"co": 75.0, "o3": 130.0},
-        }
-        if name in presets:
-            st.session_state["sim_values"] = presets[name].copy()
-        st.session_state["sim_hasil"] = None
+    # ── Init state (idempoten) ──
+    _sim_init_state()
 
     # Layout: kiri = form polutan, kanan = hasil
     col_left, col_right = st.columns([1.05, 1], gap="medium")
 
-    # ---- KIRI: Form polutan
+    # ────────────────────── KIRI: Form polutan ──────────────────────
     with col_left:
         st.markdown("<div class='card'>", unsafe_allow_html=True)
         head = st.columns([5, 1])
@@ -1845,31 +2070,34 @@ def page_simulasi(data):
             if st.button("ⓘ Info", key="btn_info_simulasi", use_container_width=True):
                 render_popup_polutan()
 
-        # Preset buttons — 5 preset (satu per kategori ISPU)
-        st.markdown("<div style='margin-bottom:0.5rem; font-size:0.85rem; color:#475569; font-weight:600;'>Preset Skenario</div>", unsafe_allow_html=True)
+        # ── Preset buttons (highlight via marker div sebelum tombol) ──
+        st.markdown(
+            "<div style='margin-bottom:0.5rem; font-size:0.85rem; color:#475569; font-weight:600;'>"
+            "Preset Skenario</div>",
+            unsafe_allow_html=True,
+        )
+        preset_labels = {
+            "Baik":               ("Baik",        "Kualitas udara Baik (ISPU 0–50)"),
+            "Sedang":             ("Sedang",      "Kualitas udara Sedang (ISPU 51–100)"),
+            "Tidak Sehat":        ("Tidak Sehat", "Kualitas udara Tidak Sehat (ISPU 101–200)"),
+            "Sangat Tidak Sehat": ("Sangat",      "Kualitas udara Sangat Tidak Sehat (ISPU 201–300)"),
+            "Berbahaya":          ("Berbahaya",   "Kualitas udara Berbahaya (ISPU ≥ 301)"),
+        }
+        # Aktif diambil dari session_state (di-set callback). Setelah render
+        # selesai, kita re-deteksi berdasar nilai slider terbaru (sinkron 2-arah).
+        current_active = st.session_state.get("sim_active_preset")
         pc = st.columns(5, gap="small")
-        with pc[0]:
-            if st.button("Bersih", key="preset_bersih", use_container_width=True,
-                         help="Kualitas udara Baik (ISPU 0–50)"):
-                apply_preset("Udara Bersih"); st.rerun()
-        with pc[1]:
-            if st.button("Sedang", key="preset_sedang", use_container_width=True,
-                         help="Kualitas udara Sedang (ISPU 51–100)"):
-                apply_preset("Udara Sedang"); st.rerun()
-        with pc[2]:
-            if st.button("Tidak Sehat", key="preset_tdksehat", use_container_width=True,
-                         help="Kualitas udara Tidak Sehat (ISPU 101–200)"):
-                apply_preset("Udara Tidak Sehat"); st.rerun()
-        with pc[3]:
-            if st.button("Sangat", key="preset_sgttdk", use_container_width=True,
-                         help="Kualitas udara Sangat Tidak Sehat (ISPU 201–300)"):
-                apply_preset("Udara Sangat Tidak Sehat"); st.rerun()
-        with pc[4]:
-            if st.button("Berbahaya", key="preset_bahaya", use_container_width=True,
-                         help="Kualitas udara Berbahaya (ISPU ≥ 301)"):
-                apply_preset("Udara Berbahaya"); st.rerun()
+        for col, (name, (label, tip)) in zip(pc, preset_labels.items()):
+            with col:
+                marker_cls = "preset-marker-active" if current_active == name else "preset-marker-idle"
+                st.markdown(f'<div class="{marker_cls}"></div>', unsafe_allow_html=True)
+                st.button(
+                    label, key=f"preset_{name.lower().replace(' ', '_')}",
+                    use_container_width=True, help=tip,
+                    on_click=apply_preset, args=(name,),
+                )
 
-        # Pilih model klasifikasi (sama seperti notebook: XGBoost / RF / SVM)
+        # ── Pilih model klasifikasi ML ──
         st.markdown(
             "<div style='margin-top:1rem; margin-bottom:0.3rem; font-size:0.85rem; "
             "color:#475569; font-weight:600;'>Model Klasifikasi</div>",
@@ -1880,8 +2108,8 @@ def page_simulasi(data):
             ["XGBoost (Rekomendasi)", "Random Forest", "SVM"],
             label_visibility="collapsed",
             help="XGBoost direkomendasikan karena akurasi tertinggi pada data uji.",
+            key="sim_model_label",
         )
-        # Map label dropdown -> argumen model_choice fungsi prediksi
         model_choice_map = {
             "XGBoost (Rekomendasi)": "xgboost",
             "Random Forest": "random_forest",
@@ -1891,181 +2119,129 @@ def page_simulasi(data):
 
         st.markdown("<div style='margin-top:1rem;'></div>", unsafe_allow_html=True)
 
-        # Sliders 6 polutan dalam 2 kolom
+        # ── Sliders 6 polutan, dalam 2 kolom (urutan UI sama dengan sebelumnya) ──
         sc1, sc2 = st.columns(2, gap="medium")
-        vals = st.session_state["sim_values"]
-
+        vals = {}
         with sc1:
-            st.markdown(
-                f"<div style='display:flex; align-items:center; gap:0.4rem; font-weight:600; color:#0F172A; margin-bottom:0.1rem;'>"
-                f"<span style='width:0.7rem; height:0.7rem; border-radius:999px; background:{INFO_POLUTAN['PM2.5']['warna']};'></span>"
-                f"PM2.5</div>"
-                f"<div style='font-size:0.78rem; color:#64748B; margin-bottom:0.3rem;'>"
-                f"{INFO_POLUTAN['PM2.5']['deskripsi_pendek']}</div>",
-                unsafe_allow_html=True,
-            )
-            vals["pm25"] = st.slider("PM2.5", 0.0, 300.0, vals["pm25"], 0.5,
-                                     key="sl_pm25", label_visibility="collapsed")
-            st.markdown(f"<div style='text-align:right; font-size:0.8rem; color:#64748B;'>{vals['pm25']:.2f} (µg/m³)</div>",
-                        unsafe_allow_html=True)
-
-            st.markdown(
-                f"<div style='display:flex; align-items:center; gap:0.4rem; font-weight:600; color:#0F172A; margin-top:1rem; margin-bottom:0.1rem;'>"
-                f"<span style='width:0.7rem; height:0.7rem; border-radius:999px; background:{INFO_POLUTAN['NO₂']['warna']};'></span>"
-                f"NO₂</div>"
-                f"<div style='font-size:0.78rem; color:#64748B; margin-bottom:0.3rem;'>"
-                f"{INFO_POLUTAN['NO₂']['deskripsi_pendek']}</div>",
-                unsafe_allow_html=True,
-            )
-            vals["no2"] = st.slider("NO₂", 0.0, 200.0, vals["no2"], 0.5,
-                                    key="sl_no2", label_visibility="collapsed")
-            st.markdown(f"<div style='text-align:right; font-size:0.8rem; color:#64748B;'>{vals['no2']:.2f} (µg/m³)</div>",
-                        unsafe_allow_html=True)
-
-            st.markdown(
-                f"<div style='display:flex; align-items:center; gap:0.4rem; font-weight:600; color:#0F172A; margin-top:1rem; margin-bottom:0.1rem;'>"
-                f"<span style='width:0.7rem; height:0.7rem; border-radius:999px; background:{INFO_POLUTAN['CO']['warna']};'></span>"
-                f"CO</div>"
-                f"<div style='font-size:0.78rem; color:#64748B; margin-bottom:0.3rem;'>"
-                f"{INFO_POLUTAN['CO']['deskripsi_pendek']}</div>",
-                unsafe_allow_html=True,
-            )
-            vals["co"] = st.slider("CO", 0.0, 100.0, vals["co"], 0.1,
-                                   key="sl_co", label_visibility="collapsed")
-            st.markdown(f"<div style='text-align:right; font-size:0.8rem; color:#64748B;'>{vals['co']:.2f} (mg/m³)</div>",
-                        unsafe_allow_html=True)
-
+            vals["pm25"] = _polutan_slider_block("pm25")
+            st.markdown("<div style='margin-top:1rem;'></div>", unsafe_allow_html=True)
+            vals["no2"]  = _polutan_slider_block("no2")
+            st.markdown("<div style='margin-top:1rem;'></div>", unsafe_allow_html=True)
+            vals["co"]   = _polutan_slider_block("co")
         with sc2:
-            st.markdown(
-                f"<div style='display:flex; align-items:center; gap:0.4rem; font-weight:600; color:#0F172A; margin-bottom:0.1rem;'>"
-                f"<span style='width:0.7rem; height:0.7rem; border-radius:999px; background:{INFO_POLUTAN['PM10']['warna']};'></span>"
-                f"PM10</div>"
-                f"<div style='font-size:0.78rem; color:#64748B; margin-bottom:0.3rem;'>"
-                f"{INFO_POLUTAN['PM10']['deskripsi_pendek']}</div>",
-                unsafe_allow_html=True,
-            )
-            vals["pm10"] = st.slider("PM10", 0.0, 300.0, vals["pm10"], 0.5,
-                                     key="sl_pm10", label_visibility="collapsed")
-            st.markdown(f"<div style='text-align:right; font-size:0.8rem; color:#64748B;'>{vals['pm10']:.2f} (µg/m³)</div>",
-                        unsafe_allow_html=True)
+            vals["pm10"] = _polutan_slider_block("pm10")
+            st.markdown("<div style='margin-top:1rem;'></div>", unsafe_allow_html=True)
+            vals["so2"]  = _polutan_slider_block("so2")
+            st.markdown("<div style='margin-top:1rem;'></div>", unsafe_allow_html=True)
+            vals["o3"]   = _polutan_slider_block("o3")
 
-            st.markdown(
-                f"<div style='display:flex; align-items:center; gap:0.4rem; font-weight:600; color:#0F172A; margin-top:1rem; margin-bottom:0.1rem;'>"
-                f"<span style='width:0.7rem; height:0.7rem; border-radius:999px; background:{INFO_POLUTAN['SO₂']['warna']};'></span>"
-                f"SO₂</div>"
-                f"<div style='font-size:0.78rem; color:#64748B; margin-bottom:0.3rem;'>"
-                f"{INFO_POLUTAN['SO₂']['deskripsi_pendek']}</div>",
-                unsafe_allow_html=True,
-            )
-            vals["so2"] = st.slider("SO₂", 0.0, 200.0, vals["so2"], 0.5,
-                                    key="sl_so2", label_visibility="collapsed")
-            st.markdown(f"<div style='text-align:right; font-size:0.8rem; color:#64748B;'>{vals['so2']:.2f} (µg/m³)</div>",
-                        unsafe_allow_html=True)
+        # ── Sinkronisasi 2-arah: kalau user menggeser slider keluar preset,
+        #    badge highlight hilang otomatis pada rerun berikutnya ──
+        detected = _detect_active_preset(vals)
+        if detected != st.session_state.get("sim_active_preset"):
+            st.session_state["sim_active_preset"] = detected
 
-            st.markdown(
-                f"<div style='display:flex; align-items:center; gap:0.4rem; font-weight:600; color:#0F172A; margin-top:1rem; margin-bottom:0.1rem;'>"
-                f"<span style='width:0.7rem; height:0.7rem; border-radius:999px; background:{INFO_POLUTAN['O₃']['warna']};'></span>"
-                f"O₃</div>"
-                f"<div style='font-size:0.78rem; color:#64748B; margin-bottom:0.3rem;'>"
-                f"{INFO_POLUTAN['O₃']['deskripsi_pendek']}</div>",
-                unsafe_allow_html=True,
-            )
-            vals["o3"] = st.slider("O₃", 0.0, 300.0, vals["o3"], 0.5,
-                                   key="sl_o3", label_visibility="collapsed")
-            st.markdown(f"<div style='text-align:right; font-size:0.8rem; color:#64748B;'>{vals['o3']:.2f} (µg/m³)</div>",
-                        unsafe_allow_html=True)
-
-        # Buttons
+        # ── Tombol Reset (Submit dihilangkan, hasil sudah realtime) ──
         st.markdown("<div style='margin-top:1.5rem;'></div>", unsafe_allow_html=True)
-        bc1, bc2, bc3 = st.columns([1, 1, 2])
+        bc1, bc2 = st.columns([1, 3])
         with bc1:
-            if st.button("Submit Simulasi", key="btn_submit", type="primary", use_container_width=True):
-                # Nilai ISPU + kategori (5 kelas) dari formula hitung_ispu()
-                nilai_ispu, kategori = hitung_ispu(
-                    pm10=vals["pm10"], pm25=vals["pm25"], so2=vals["so2"],
-                    co=vals["co"], o3=vals["o3"], no2=vals["no2"],
-                )
-                # Klasifikasi model ML (XGBoost/RF/SVM) sebagai pembanding
-                ml = prediksi_ispu_xgboost(
-                    pm10=vals["pm10"], pm25=vals["pm25"], so2=vals["so2"],
-                    co=vals["co"], o3=vals["o3"], no2=vals["no2"],
-                    model_choice=st.session_state.get("sim_model_choice", "xgboost"),
-                )
-                st.session_state["sim_hasil"] = {
-                    "nilai_ispu": nilai_ispu,
-                    "kategori": kategori,
-                    "ml_kategori": ml["kategori"],
-                    "ml_model": ml.get("model_used", "XGBoost"),
-                    "ml_confidence": ml.get("confidence"),
-                }
-                st.rerun()
-        with bc2:
-            if st.button("Reset", key="btn_reset", type="secondary", use_container_width=True):
-                st.session_state["sim_values"] = {"pm25": 50.0, "pm10": 70.0, "no2": 25.0, "so2": 35.0, "co": 1.5, "o3": 50.0}
-                st.session_state["sim_hasil"] = None
-                st.rerun()
+            st.markdown('<div class="reset-marker"></div>', unsafe_allow_html=True)
+            st.button(
+                "↺ Reset", key="btn_reset",
+                type="secondary", use_container_width=True,
+                on_click=reset_simulation,
+                help="Kembalikan semua slider ke nilai default & hapus preset aktif.",
+            )
 
         st.markdown("</div>", unsafe_allow_html=True)
 
-    # ---- KANAN: Hasil prediksi
+    # ────────────────────── KANAN: Hasil prediksi (REALTIME) ──────────────────────
     with col_right:
+        # Hitung ISPU + ML tiap rerun berdasarkan nilai slider terkini.
+        nilai_ispu, kategori, polutan_dominan, subindeks = calculate_ispu_category(
+            pm10=vals["pm10"], pm25=vals["pm25"], so2=vals["so2"],
+            co=vals["co"],   o3=vals["o3"],     no2=vals["no2"],
+        )
+
+        try:
+            ml = prediksi_ispu_xgboost(
+                pm10=vals["pm10"], pm25=vals["pm25"], so2=vals["so2"],
+                co=vals["co"],   o3=vals["o3"],     no2=vals["no2"],
+                model_choice=st.session_state.get("sim_model_choice", "xgboost"),
+            )
+            ml_kategori   = ml.get("kategori")
+            ml_model_used = ml.get("model_used", "XGBoost")
+            ml_confidence = ml.get("confidence")
+        except Exception:
+            ml_kategori = None
+            ml_model_used = None
+            ml_confidence = None
+
+        info = KATEGORI_INFO[kategori]
+
         st.markdown("<div class='card'>", unsafe_allow_html=True)
         st.markdown("<div class='card-title'>Hasil Prediksi ISPU</div>", unsafe_allow_html=True)
 
-        hasil = st.session_state["sim_hasil"]
-
-        if hasil is None:
+        # Badge preset aktif (kalau ada)
+        active_name = st.session_state.get("sim_active_preset")
+        if active_name:
             st.markdown(
-                """
-                <div style='text-align:center; padding:3rem 1rem; color:#94A3B8;'>
-                    <div style='font-size:3rem; margin-bottom:0.5rem;'>📊</div>
-                    <div style='font-size:0.95rem; font-weight:600; color:#475569;'>
-                        Atur slider polutan, lalu klik <strong>Submit Simulasi</strong>
-                    </div>
-                    <div style='font-size:0.82rem; margin-top:0.4rem;'>
-                        Prediksi akan ditampilkan di sini.
-                    </div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-        else:
-            kat = hasil["kategori"]
-            info = KATEGORI_INFO[kat]
-            st.markdown(
-                f"""
-                <div class='hasil-hero'>
-                    <div>
-                        <div class='hasil-num' style='color:{info["warna"]};'>{hasil["nilai_ispu"]:.0f}</div>
-                        <div class='hasil-label-ispu'>ISPU</div>
-                    </div>
-                    <div>
-                        <div style='font-size:2.5rem; line-height:1;'>{info["emoji"]}</div>
-                        <div class='ispu-status' style='color:{info["warna"]}; margin-top:0.4rem;'>Udara {kat}</div>
-                        <div class='ispu-desc'>{info["deskripsi"]}</div>
-                    </div>
-                </div>
-
-                <div class='rekom-box' style='border:1px solid {info["warna"]}40; background:{info["warna_bg"]};'>
-                    <div class='rekom-box-title' style='color:{info["warna"]};'>Rekomendasi Aktivitas</div>
-                    <div class='rekom-box-text' style='color:#334155;'>{info["rekomendasi"]}</div>
-                </div>
-                """,
+                f"<div class='active-preset-badge'><span class='dot'></span>"
+                f"Preset aktif: <strong>{active_name}</strong></div>",
                 unsafe_allow_html=True,
             )
 
-            # Pembanding klasifikasi Model ML (XGBoost/RF/SVM)
-            ml_model = hasil.get("ml_model", "XGBoost")
-            ml_kat = hasil.get("ml_kategori")
-            ml_conf = hasil.get("ml_confidence")
-            conf_txt = f" (keyakinan {ml_conf*100:.1f}%)" if ml_conf is not None else ""
+        # Hero result — angka ISPU + emoji + status
+        st.markdown(
+            f"""
+            <div class='hasil-hero sim-fade'>
+                <div>
+                    <div class='hasil-num' style='color:{info["warna"]};'>{nilai_ispu:.0f}</div>
+                    <div class='hasil-label-ispu'>ISPU</div>
+                </div>
+                <div>
+                    <div style='font-size:2.5rem; line-height:1;'>{info["emoji"]}</div>
+                    <div class='ispu-status' style='color:{info["warna"]}; margin-top:0.4rem;'>Udara {kategori}</div>
+                    <div class='ispu-desc'>{info["deskripsi"]}</div>
+                </div>
+            </div>
+
+            <div class='rekom-box sim-fade' style='border:1px solid {info["warna"]}40; background:{info["warna_bg"]};'>
+                <div class='rekom-box-title' style='color:{info["warna"]};'>Rekomendasi Aktivitas</div>
+                <div class='rekom-box-text' style='color:#334155;'>{info["rekomendasi"]}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        # Sub-indeks tiap polutan + tandai polutan dominan
+        rows_html = ""
+        for pol, sub_val in sorted(subindeks.items(), key=lambda kv: -kv[1]):
+            dom_cls = " dominan" if pol == polutan_dominan else ""
+            tag = "  ← dominan" if pol == polutan_dominan else ""
+            rows_html += (
+                f"<div class='subindex-row{dom_cls}'>"
+                f"<span class='label'>{POLUTAN_DISPLAY_NAME[pol]}{tag}</span>"
+                f"<span class='val'>{sub_val:.1f}</span>"
+                f"</div>"
+            )
+        st.markdown(
+            "<div style='margin-top:1rem; font-size:0.8rem; color:#475569; font-weight:600; margin-bottom:0.4rem;'>"
+            "Sub-Indeks per Polutan"
+            "</div>" + rows_html,
+            unsafe_allow_html=True,
+        )
+
+        # Pembanding klasifikasi Model ML
+        if ml_kategori is not None:
+            conf_txt = f" (keyakinan {ml_confidence*100:.1f}%)" if ml_confidence is not None else ""
             st.markdown(
                 f"""
                 <div class='info-box' style='margin-top:1rem;'>
                     <div class='info-box-icon'>ⓘ</div>
                     <div class='info-box-text'>
-                        Nilai ISPU dihitung dengan formula sub-indeks polutan (standar 5 kategori).<br>
-                        Klasifikasi model <strong>{ml_model}</strong>: <strong>{ml_kat}</strong>{conf_txt}.
+                        Nilai ISPU dihitung dengan formula sub-indeks PerMenLHK 14/2020.<br>
+                        Klasifikasi model <strong>{ml_model_used}</strong>: <strong>{ml_kategori}</strong>{conf_txt}.
                     </div>
                 </div>
                 """,
