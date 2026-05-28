@@ -1907,12 +1907,13 @@ def page_detail_wilayah(data):
 # HALAMAN 3: SIMULASI PREDIKSI ISPU
 # ================================================================
 # ── Konfigurasi terpusat ───────────────────────────────────────
-# Default & preset disusun agar nilai ISPU yang dihitung dengan
-# calculate_ispu_category() jatuh tepat di kategori yang dimaksud
-# (sesuai breakpoint PerMenLHK No. 14/2020).
+# DEFAULT_VALUES untuk state awal & target tombol Reset.
+# Semua nol → ISPU final = 0, kategori = "Baik" (kondisi netral).
+# Preset di bawah dirancang agar masing-masing jatuh tepat di
+# kategori yang dimaksud sesuai breakpoint PerMenLHK No. 14/2020.
 SIM_DEFAULT_VALUES = {
-    "pm25": 25.0, "pm10": 40.0, "no2": 30.0,
-    "so2":  30.0, "co":   2.0,  "o3":  60.0,
+    "pm25": 0.0, "pm10": 0.0, "no2": 0.0,
+    "so2":  0.0, "co":  0.0, "o3":  0.0,
 }
 
 # Preset: 5 skenario, satu per kategori ISPU.
@@ -2191,6 +2192,20 @@ def page_simulasi(data):
                 unsafe_allow_html=True,
             )
 
+        # State netral = semua polutan 0 (mis. setelah klik Reset).
+        # Saat netral, tetap tampilkan struktur penuh tapi dengan label
+        # "Belum Ada Simulasi" supaya jelas ini bukan hasil yang valid.
+        is_neutral = (nilai_ispu == 0)
+        status_text = "Belum Ada Simulasi" if is_neutral else f"Udara {kategori}"
+        deskripsi_text = (
+            "Geser slider atau pilih preset untuk memulai simulasi."
+            if is_neutral else info["deskripsi"]
+        )
+        rekom_text = (
+            "Belum ada rekomendasi — silakan atur nilai polutan terlebih dahulu."
+            if is_neutral else info["rekomendasi"]
+        )
+
         # Hero result — angka ISPU + emoji + status
         st.markdown(
             f"""
@@ -2201,24 +2216,26 @@ def page_simulasi(data):
                 </div>
                 <div>
                     <div style='font-size:2.5rem; line-height:1;'>{info["emoji"]}</div>
-                    <div class='ispu-status' style='color:{info["warna"]}; margin-top:0.4rem;'>Udara {kategori}</div>
-                    <div class='ispu-desc'>{info["deskripsi"]}</div>
+                    <div class='ispu-status' style='color:{info["warna"]}; margin-top:0.4rem;'>{status_text}</div>
+                    <div class='ispu-desc'>{deskripsi_text}</div>
                 </div>
             </div>
 
             <div class='rekom-box sim-fade' style='border:1px solid {info["warna"]}40; background:{info["warna_bg"]};'>
                 <div class='rekom-box-title' style='color:{info["warna"]};'>Rekomendasi Aktivitas</div>
-                <div class='rekom-box-text' style='color:#334155;'>{info["rekomendasi"]}</div>
+                <div class='rekom-box-text' style='color:#334155;'>{rekom_text}</div>
             </div>
             """,
             unsafe_allow_html=True,
         )
 
-        # Sub-indeks tiap polutan + tandai polutan dominan
+        # Sub-indeks tiap polutan. Label "← dominan" tidak relevan saat
+        # semua nilai 0, jadi disembunyikan dalam kondisi netral.
         rows_html = ""
         for pol, sub_val in sorted(subindeks.items(), key=lambda kv: -kv[1]):
-            dom_cls = " dominan" if pol == polutan_dominan else ""
-            tag = "  ← dominan" if pol == polutan_dominan else ""
+            is_dom = (not is_neutral) and (pol == polutan_dominan)
+            dom_cls = " dominan" if is_dom else ""
+            tag = "  ← dominan" if is_dom else ""
             rows_html += (
                 f"<div class='subindex-row{dom_cls}'>"
                 f"<span class='label'>{POLUTAN_DISPLAY_NAME[pol]}{tag}</span>"
