@@ -663,8 +663,29 @@ def inject_css():
         font-weight: 700;
         color: #92400E;
     }
-    .subindex-row .label { color: #475569; }
-    .subindex-row .val   { font-variant-numeric: tabular-nums; color: #0F172A; font-weight: 600; }
+    .subindex-row .label { color: #475569; display:flex; align-items:center; gap:0.4rem; }
+    .subindex-row .val   { font-variant-numeric: tabular-nums; color: #0F172A; font-weight: 600; min-width: 2.5rem; text-align:right; }
+
+    /* Pill kategori per polutan (Baik/Sedang/Tidak Sehat/dst) */
+    .kat-pill {
+        font-size: 0.68rem;
+        font-weight: 700;
+        padding: 0.15rem 0.5rem;
+        border-radius: 999px;
+        border: 1px solid transparent;
+        white-space: nowrap;
+        letter-spacing: 0.01em;
+    }
+    /* Badge polutan dominan (⚠ DOMINAN) */
+    .dom-badge {
+        font-size: 0.62rem;
+        font-weight: 800;
+        background: #F59E0B;
+        color: #FFFFFF;
+        padding: 0.1rem 0.4rem;
+        border-radius: 4px;
+        letter-spacing: 0.04em;
+    }
 
     /* ============ TABS WILAYAH ============ */
     .stTabs [data-baseweb="tab-list"] {
@@ -851,71 +872,157 @@ def kategori_dari_ispu(ispu):
 
 
 # ─────────────────────────────────────────────────────────────────
-# ISPU sub-index breakpoints — PerMenLHK No. 14/2020
-# Tiap polutan punya 5 pita konsentrasi (Baik→Berbahaya) yang dipetakan
-# ke 5 pita indeks (0–50, 51–100, 101–200, 201–300, 301–500).
-# Konversi konsentrasi → sub-indeks pakai interpolasi linier per pita:
-#   I = ((Ia - Ib) / (Xa - Xb)) * (X - Xb) + Ib
-# Sub-indeks tertinggi di antara 6 polutan menjadi nilai ISPU final
-# dan menentukan kategori — polutan tersebut disebut "polutan dominan".
-# Cara ini konsisten dengan praktik pemerintah & badan lingkungan global,
-# dan menggantikan rumus linier naif yang membuat semua preset bias ke
-# kategori "Tidak Sehat".
+# ISPU SUB-INDEX — PerMenLHK No. 14/2020
 # ─────────────────────────────────────────────────────────────────
-ISPU_INDEX_BANDS = [(0, 50), (51, 100), (101, 200), (201, 300), (301, 500)]
-ISPU_CONC_BANDS = {
-    "pm25": [(0, 15.5),   (15.6, 55.4),   (55.5, 150.4),  (150.5, 250.4), (250.5, 500)],
-    "pm10": [(0, 50),     (51, 150),      (151, 350),     (351, 420),     (421, 500)],
-    "so2":  [(0, 52),     (53, 180),      (181, 400),     (401, 800),     (801, 1200)],
-    "co":   [(0, 4),      (4.001, 8),     (8.001, 15),    (15.001, 30),   (30.001, 45)],
-    "o3":   [(0, 120),    (121, 235),     (236, 400),     (401, 800),     (801, 1000)],
-    "no2":  [(0, 80),     (81, 200),      (201, 1130),    (1131, 2260),   (2261, 3000)],
+# Setiap polutan punya 5 pita konsentrasi yang dipetakan ke 5 pita
+# indeks ISPU. Tuple format: (bp_low, bp_high, idx_low, idx_high)
+#   bp_low/bp_high : batas bawah/atas konsentrasi polutan
+#   idx_low/idx_high : batas bawah/atas indeks ISPU yang sesuai
+#
+# Boundary di-overlap (mis. band 0 hi=15.5, band 1 lo=15.5) supaya
+# tidak ada gap numerik — formula interpolasi linear menghasilkan
+# nilai yang sama di titik boundary, jadi aman untuk dimatch ke
+# band manapun.
+#
+# Rumus interpolasi (PerMenLHK):
+#     I = ((Ia - Ib) / (Xa - Xb)) * (Xx - Xb) + Ib
+#   I  = sub-indeks polutan
+#   Xx = konsentrasi aktual
+#   Xb, Xa = batas konsentrasi bawah/atas pita
+#   Ib, Ia = batas indeks bawah/atas pita
+# ─────────────────────────────────────────────────────────────────
+BREAKPOINTS = {
+    # PM2.5 — µg/m³, rata-rata 24 jam
+    "pm25": [
+        (0,     15.5,  0,   50),
+        (15.5,  55.4,  50,  100),
+        (55.4,  150.4, 100, 200),
+        (150.4, 250.4, 200, 300),
+        (250.4, 500,   300, 500),
+    ],
+    # PM10 — µg/m³, rata-rata 24 jam
+    "pm10": [
+        (0,   50,  0,   50),
+        (50,  150, 50,  100),
+        (150, 350, 100, 200),
+        (350, 420, 200, 300),
+        (420, 500, 300, 500),
+    ],
+    # SO₂ — µg/m³, rata-rata 24 jam
+    "so2": [
+        (0,   52,   0,   50),
+        (52,  180,  50,  100),
+        (180, 400,  100, 200),
+        (400, 800,  200, 300),
+        (800, 1200, 300, 500),
+    ],
+    # CO — mg/m³, rata-rata 8 jam (catatan: sangat sensitif,
+    # 9 mg/m³ sudah masuk band Tidak Sehat)
+    "co": [
+        (0,  4,  0,   50),
+        (4,  8,  50,  100),
+        (8,  15, 100, 200),
+        (15, 30, 200, 300),
+        (30, 45, 300, 500),
+    ],
+    # O₃ — µg/m³, rata-rata 8 jam
+    "o3": [
+        (0,   120,  0,   50),
+        (120, 235,  50,  100),
+        (235, 400,  100, 200),
+        (400, 800,  200, 300),
+        (800, 1000, 300, 500),
+    ],
+    # NO₂ — µg/m³, rata-rata 1 jam
+    "no2": [
+        (0,    80,   0,   50),
+        (80,   200,  50,  100),
+        (200,  1130, 100, 200),
+        (1130, 2260, 200, 300),
+        (2260, 3000, 300, 500),
+    ],
 }
 
+# Threshold kategori ISPU (PerMenLHK 14/2020)
+ISPU_CATEGORY_THRESHOLDS = [
+    (50,    "Baik"),
+    (100,   "Sedang"),
+    (200,   "Tidak Sehat"),
+    (300,   "Sangat Tidak Sehat"),
+    (float("inf"), "Berbahaya"),
+]
 
-def _ispu_subindex(polutan: str, x: float) -> float:
-    """Konversi konsentrasi satu polutan ke sub-indeks ISPU (0–500)."""
-    bands = ISPU_CONC_BANDS[polutan]
-    if x <= 0:
+
+def calculate_subindex(value: float, breakpoints: list) -> float:
+    """
+    Hitung sub-indeks ISPU untuk SATU polutan dengan interpolasi linear.
+
+    Args:
+        value: konsentrasi aktual polutan (sesuai satuannya)
+        breakpoints: list tuple (bp_low, bp_high, idx_low, idx_high)
+
+    Returns:
+        nilai sub-indeks (0–500). Di luar range, di-clamp ke 0 atau 500.
+
+    Rumus PerMenLHK 14/2020:
+        I = ((idx_high - idx_low) / (bp_high - bp_low)) * (value - bp_low) + idx_low
+    """
+    # Edge case: nilai nol atau negatif → sub-indeks 0
+    if value <= 0:
         return 0.0
-    if x >= bands[-1][1]:
+    # Edge case: nilai melebihi breakpoint maksimum → cap 500
+    last_bp_high = breakpoints[-1][1]
+    if value >= last_bp_high:
         return 500.0
-    for i, (lo, hi) in enumerate(bands):
-        if lo <= x <= hi:
-            Ib, Ia = ISPU_INDEX_BANDS[i]
-            return ((Ia - Ib) / (hi - lo)) * (x - lo) + Ib
+    # Cari band yang memuat nilai ini, lalu interpolasi linear
+    for bp_low, bp_high, idx_low, idx_high in breakpoints:
+        if bp_low <= value <= bp_high:
+            return ((idx_high - idx_low) / (bp_high - bp_low)) * (value - bp_low) + idx_low
+    # Fallback (seharusnya tak terjangkau karena range BREAKPOINTS kontinu)
     return 500.0
 
 
+def calculate_final_ispu(values: dict) -> tuple:
+    """
+    Hitung sub-indeks SEMUA polutan + ISPU final + polutan dominan.
+
+    Args:
+        values: dict {"pm25": float, "pm10": float, "no2": float,
+                      "so2": float,  "co":   float, "o3":  float}
+
+    Returns:
+        (final_ispu, polutan_dominan, dict_subindeks)
+        final_ispu = max sub-indeks
+        polutan_dominan = key polutan dengan sub-indeks tertinggi
+        dict_subindeks = {polutan: sub_index} untuk semua 6 polutan
+    """
+    subindeks = {
+        pol: calculate_subindex(values.get(pol, 0.0), bps)
+        for pol, bps in BREAKPOINTS.items()
+    }
+    final_ispu = max(subindeks.values())
+    polutan_dominan = max(subindeks, key=subindeks.get)
+    return final_ispu, polutan_dominan, subindeks
+
+
+def get_ispu_category(ispu_value: float) -> str:
+    """Mapping nilai ISPU ke kategori (5 kelas) sesuai PerMenLHK 14/2020."""
+    for threshold, kategori in ISPU_CATEGORY_THRESHOLDS:
+        if ispu_value <= threshold:
+            return kategori
+    return "Berbahaya"  # safety net
+
+
+# ─── Wrappers untuk kompatibilitas dengan kode existing ───
 def calculate_ispu_category(pm10, pm25, so2, co, o3, no2):
     """
-    Hitung nilai ISPU + kategori sesuai PerMenLHK 14/2020.
-
-    Returns: (nilai_ispu, kategori, polutan_dominan, dict_subindex_per_polutan)
+    Wrapper signature lama. Internal-nya komposisi 3 fungsi modular di atas.
+    Returns: (nilai_ispu_dibulatkan, kategori, polutan_dominan, dict_subindeks)
     """
-    subs = {
-        "pm10": _ispu_subindex("pm10", pm10),
-        "pm25": _ispu_subindex("pm25", pm25),
-        "so2":  _ispu_subindex("so2",  so2),
-        "co":   _ispu_subindex("co",   co),
-        "o3":   _ispu_subindex("o3",   o3),
-        "no2":  _ispu_subindex("no2",  no2),
-    }
-    final = max(subs.values())
-    dominan = max(subs, key=subs.get)
-
-    if final <= 50:
-        kategori = "Baik"
-    elif final <= 100:
-        kategori = "Sedang"
-    elif final <= 200:
-        kategori = "Tidak Sehat"
-    elif final <= 300:
-        kategori = "Sangat Tidak Sehat"
-    else:
-        kategori = "Berbahaya"
-
-    return round(final, 1), kategori, dominan, subs
+    values = {"pm10": pm10, "pm25": pm25, "so2": so2, "co": co, "o3": o3, "no2": no2}
+    final_ispu, polutan_dominan, subindeks = calculate_final_ispu(values)
+    kategori = get_ispu_category(final_ispu)
+    return round(final_ispu, 1), kategori, polutan_dominan, subindeks
 
 
 def hitung_ispu(pm10, pm25, so2, co, o3, no2):
@@ -2229,17 +2336,42 @@ def page_simulasi(data):
             unsafe_allow_html=True,
         )
 
-        # Sub-indeks tiap polutan. Label "← dominan" tidak relevan saat
-        # semua nilai 0, jadi disembunyikan dalam kondisi netral.
+        # Sub-indeks tiap polutan. Setiap baris diberi:
+        #  - label kategori (Baik/Sedang/Tidak Sehat/dst) dari get_ispu_category()
+        #  - warna sesuai kategori (KATEGORI_INFO[...]["warna"])
+        #  - badge ⚠ untuk polutan dominan (yang menentukan ISPU final)
+        # Tujuan: user langsung paham kontribusi tiap polutan dan kenapa
+        # nilai tertentu (mis. CO=9) bisa "kelihatan" tinggi padahal slidernya
+        # tidak penuh — karena breakpoint CO memang sangat sensitif.
         rows_html = ""
         for pol, sub_val in sorted(subindeks.items(), key=lambda kv: -kv[1]):
             is_dom = (not is_neutral) and (pol == polutan_dominan)
+            sub_kategori = get_ispu_category(sub_val)
+            sub_info = KATEGORI_INFO[sub_kategori]
+            sub_warna = sub_info["warna"]
+            sub_warna_bg = sub_info["warna_bg"]
             dom_cls = " dominan" if is_dom else ""
-            tag = "  ← dominan" if is_dom else ""
+            dom_badge = (
+                "<span class='dom-badge' title='Polutan dominan — sub-indeks tertinggi'>⚠ DOMINAN</span>"
+                if is_dom else ""
+            )
+            # Saat netral (semua 0), sembunyikan label kategori supaya tidak
+            # menyiratkan "Baik" yang seolah-olah hasil pengukuran valid.
+            if is_neutral:
+                kat_pill = ""
+            else:
+                kat_pill = (
+                    f"<span class='kat-pill' style='background:{sub_warna_bg}; "
+                    f"color:{sub_warna}; border-color:{sub_warna}30;'>"
+                    f"{sub_kategori}</span>"
+                )
             rows_html += (
                 f"<div class='subindex-row{dom_cls}'>"
-                f"<span class='label'>{POLUTAN_DISPLAY_NAME[pol]}{tag}</span>"
+                f"<span class='label'>{POLUTAN_DISPLAY_NAME[pol]}{dom_badge}</span>"
+                f"<span style='display:flex; align-items:center; gap:0.5rem;'>"
+                f"{kat_pill}"
                 f"<span class='val'>{sub_val:.1f}</span>"
+                f"</span>"
                 f"</div>"
             )
         st.markdown(
