@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 80" width="200" height="80">
+  <!-- Icon: daun hijau dengan akar biru -->
+  <g transform="translate(8, 12)">
+    <!-- Daun -->
+    <path d="M30 6 C18 14, 10 26, 14 40 C20 46, 32 44, 38 36 C42 26, 38 12, 30 6 Z" fill="#16A34A"/>
+    <path d="M30 6 C42 14, 50 26, 46 40 C40 46, 28 44, 22 36 C18 26, 22 12, 30 6 Z" fill="#22C55E"/>
+    <!-- Tetesan/akar biru -->
+    <circle cx="30" cy="50" r="4" fill="#2563EB"/>
+    <circle cx="22" cy="56" r="3" fill="#3B82F6"/>
+    <circle cx="38" cy="56" r="3" fill="#3B82F6"/>
+  </g>
+  <!-- Teks JakU -->
+  <text x="72" y="50" font-family="Inter, system-ui, sans-serif" font-size="32" font-weight="800" fill="#16A34A">Jak</text>
+  <text x="128" y="50" font-family="Inter, system-ui, sans-serif" font-size="32" font-weight="800" fill="#2563EB">U</text>
+</svg>

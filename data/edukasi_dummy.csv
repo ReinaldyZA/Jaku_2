@@ -1,0 +1,6 @@
+kategori,rentang,deskripsi,warna,emoji
+Baik,0-50,"Udara bersih, aman untuk beraktivitas sehari-hari.",#16A34A,😊
+Sedang,51-100,Masih dapat diterima untuk beraktivitas luar ruangan.,#2563EB,😐
+Tidak Sehat,101-200,"Kurangi aktivitas luar ruangan, terutama bagi kelompok sensitif.",#F59E0B,😷
+Sangat Tidak Sehat,201-300,Hindari aktivitas luar ruangan. Gunakan masker jika harus keluar.,#EF4444,🤢
+Berbahaya,≥ 301,Hindari semua aktivitas luar ruangan. Tetap di dalam ruangan.,#7C3AED,☠️

@@ -1,0 +1,50 @@
+tanggal,wilayah,ispu,kategori,pm25
+2024-06-16,DKI Jakarta,74,Sedang,28
+2024-06-17,DKI Jakarta,78,Sedang,31
+2024-06-18,DKI Jakarta,82,Sedang,34
+2024-06-19,DKI Jakarta,95,Sedang,41
+2024-06-20,DKI Jakarta,108,Tidak Sehat,48
+2024-06-21,DKI Jakarta,102,Tidak Sehat,45
+2024-06-22,DKI Jakarta,89,Sedang,37
+2024-06-16,Jakarta Pusat,68,Sedang,26
+2024-06-17,Jakarta Pusat,72,Sedang,29
+2024-06-18,Jakarta Pusat,108,Tidak Sehat,45
+2024-06-19,Jakarta Pusat,77,Sedang,32
+2024-06-20,Jakarta Pusat,102,Tidak Sehat,49
+2024-06-21,Jakarta Pusat,72,Sedang,45
+2024-06-22,Jakarta Pusat,60,Sedang,37
+2024-06-16,Jakarta Utara,65,Sedang,24
+2024-06-17,Jakarta Utara,70,Sedang,27
+2024-06-18,Jakarta Utara,88,Sedang,38
+2024-06-19,Jakarta Utara,75,Sedang,30
+2024-06-20,Jakarta Utara,82,Sedang,35
+2024-06-21,Jakarta Utara,69,Sedang,26
+2024-06-22,Jakarta Utara,58,Sedang,22
+2024-06-16,Jakarta Barat,102,Tidak Sehat,46
+2024-06-17,Jakarta Barat,115,Tidak Sehat,52
+2024-06-18,Jakarta Barat,125,Tidak Sehat,58
+2024-06-19,Jakarta Barat,110,Tidak Sehat,50
+2024-06-20,Jakarta Barat,118,Tidak Sehat,54
+2024-06-21,Jakarta Barat,105,Tidak Sehat,48
+2024-06-22,Jakarta Barat,95,Sedang,42
+2024-06-16,Jakarta Selatan,71,Sedang,26
+2024-06-17,Jakarta Selatan,78,Sedang,30
+2024-06-18,Jakarta Selatan,95,Sedang,42
+2024-06-19,Jakarta Selatan,82,Sedang,34
+2024-06-20,Jakarta Selatan,89,Sedang,38
+2024-06-21,Jakarta Selatan,76,Sedang,29
+2024-06-22,Jakarta Selatan,64,Sedang,24
+2024-06-16,Jakarta Timur,68,Sedang,25
+2024-06-17,Jakarta Timur,74,Sedang,28
+2024-06-18,Jakarta Timur,92,Sedang,40
+2024-06-19,Jakarta Timur,80,Sedang,33
+2024-06-20,Jakarta Timur,86,Sedang,36
+2024-06-21,Jakarta Timur,72,Sedang,27
+2024-06-22,Jakarta Timur,62,Sedang,23
+2024-06-16,Kep. Seribu,42,Baik,15
+2024-06-17,Kep. Seribu,45,Baik,16
+2024-06-18,Kep. Seribu,52,Sedang,19
+2024-06-19,Kep. Seribu,48,Baik,17
+2024-06-20,Kep. Seribu,55,Sedang,21
+2024-06-21,Kep. Seribu,44,Baik,16
+2024-06-22,Kep. Seribu,38,Baik,14
