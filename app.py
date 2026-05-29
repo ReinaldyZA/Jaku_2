@@ -579,64 +579,352 @@ def inject_css():
         line-height: 1.5;
     }
 
-    /* ============ PRESET BUTTONS (Simulasi) ============ */
-    /* Marker wrapper sebelum tombol preset: <div class="preset-marker-{active|idle}"></div>.
-       Sibling-combinator selector di bawah menarget tombol Streamlit tepat
-       setelah marker tsb. Cara ini bypass keterbatasan Streamlit yang tidak
-       memberi kita class CSS langsung pada tombol. */
-    .preset-marker-active + div [data-testid="stBaseButton-secondary"],
-    .preset-marker-active + div button[kind="secondary"] {
-        background: linear-gradient(135deg, #DCFCE7 0%, #BBF7D0 100%) !important;
-        border: 2px solid #16A34A !important;
-        color: #14532D !important;
-        font-weight: 700 !important;
-        box-shadow: 0 4px 12px -2px rgba(22, 163, 74, 0.35) !important;
-        transform: translateY(-1px);
+    /* ============ SIM PAGE — MODERN CARD SYSTEM ============ */
+    /* Wrapper card untuk Komposisi Polutan & Hasil Prediksi */
+    .sim-card {
+        background: #FFFFFF;
+        border-radius: 20px;
+        padding: 1.6rem 1.75rem;
+        border: 1px solid #E5E7EB;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04),
+                    0 4px 14px -4px rgba(15, 23, 42, 0.06);
+        margin-bottom: 1rem;
     }
-    .preset-marker-idle + div [data-testid="stBaseButton-secondary"],
-    .preset-marker-idle + div button[kind="secondary"] {
-        transition: all 0.2s ease-in-out !important;
+    .sim-card-header {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.85rem;
+        margin-bottom: 1.25rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid #F1F5F9;
     }
-    .preset-marker-idle + div [data-testid="stBaseButton-secondary"]:hover,
-    .preset-marker-idle + div button[kind="secondary"]:hover {
-        background: #F0FDF4 !important;
-        border-color: #86EFAC !important;
-        color: #166534 !important;
+    .sim-card-icon {
+        width: 2.5rem; height: 2.5rem;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #DBEAFE 0%, #BFDBFE 100%);
+        color: #2563EB;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.2rem; flex-shrink: 0;
+    }
+    .sim-card-icon.icon-result {
+        background: linear-gradient(135deg, #DCFCE7 0%, #BBF7D0 100%);
+        color: #16A34A;
+    }
+    .sim-card-title {
+        font-size: 1.05rem; font-weight: 700;
+        color: #0F172A;
+        letter-spacing: -0.015em;
+        line-height: 1.3;
+    }
+    .sim-card-desc {
+        font-size: 0.82rem; color: #64748B;
+        line-height: 1.5;
+        margin-top: 0.15rem;
+    }
+    .sim-section-label {
+        font-size: 0.72rem; font-weight: 700;
+        color: #475569;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        margin-bottom: 0.55rem;
+        display: flex; align-items: center; gap: 0.4rem;
+    }
+    .sim-section-label::before {
+        content: ""; width: 0.7rem; height: 1.5px;
+        background: #94A3B8; border-radius: 2px;
     }
 
-    /* Reset button — outline merah lembut supaya beda dengan preset */
-    .reset-marker + div [data-testid="stBaseButton-secondary"],
-    .reset-marker + div button[kind="secondary"] {
+    /* ============ PRESET PILLS (warna sesuai kategori ISPU) ============ */
+    /* Pakai marker div sebagai sibling supaya bisa target tombol Streamlit
+       lewat CSS combinator (Streamlit tidak expose class langsung di button). */
+    /* ============ PRESET PILLS — :has() selector ============ */
+    /* Karena Streamlit nesting marker dalam stMarkdown 4 level dalam, kita
+       harus naik ke stElementContainer (level 4) lalu cari sibling-nya yang
+       memuat button. Modern :has() bekerja di Chrome/Edge/Safari ≥2022,
+       Firefox ≥2023 — aman untuk Streamlit Community Cloud users. */
+    [data-testid="stElementContainer"]:has(.pmkr) + [data-testid="stElementContainer"] button[kind="secondary"],
+    [data-testid="stElementContainer"]:has(.pmkr) + [data-testid="stElementContainer"] [data-testid="stBaseButton-secondary"] {
+        border-radius: 999px !important;
+        font-weight: 600 !important;
+        padding: 0.45rem 0.7rem !important;
+        font-size: 0.78rem !important;
+        transition: all 0.2s ease-in-out !important;
+        border: 1.5px solid #E5E7EB !important;
+        background: #FFFFFF !important;
+        color: #475569 !important;
+        min-height: 2.2rem !important;
+    }
+    /* Idle hover — outline pakai warna kategori */
+    [data-testid="stElementContainer"]:has(.pmkr-baik) + [data-testid="stElementContainer"] button[kind="secondary"]:hover {
+        border-color: #16A34A !important; background: #F0FDF4 !important; color: #15803D !important;
+    }
+    [data-testid="stElementContainer"]:has(.pmkr-sedang) + [data-testid="stElementContainer"] button[kind="secondary"]:hover {
+        border-color: #EAB308 !important; background: #FEFCE8 !important; color: #A16207 !important;
+    }
+    [data-testid="stElementContainer"]:has(.pmkr-tdksehat) + [data-testid="stElementContainer"] button[kind="secondary"]:hover {
+        border-color: #EA580C !important; background: #FFF7ED !important; color: #C2410C !important;
+    }
+    [data-testid="stElementContainer"]:has(.pmkr-sgttdksehat) + [data-testid="stElementContainer"] button[kind="secondary"]:hover {
+        border-color: #DC2626 !important; background: #FEF2F2 !important; color: #B91C1C !important;
+    }
+    [data-testid="stElementContainer"]:has(.pmkr-berbahaya) + [data-testid="stElementContainer"] button[kind="secondary"]:hover {
+        border-color: #7C2D12 !important; background: #FAF5FF !important; color: #6B21A8 !important;
+    }
+    /* Active — fill gradient sesuai kategori */
+    [data-testid="stElementContainer"]:has(.pmkr-baik.active) + [data-testid="stElementContainer"] button[kind="secondary"] {
+        background: linear-gradient(135deg, #16A34A 0%, #15803D 100%) !important;
+        border-color: #15803D !important; color: #FFFFFF !important;
+        box-shadow: 0 4px 12px -2px rgba(22,163,74,0.4) !important;
+        font-weight: 700 !important; transform: translateY(-1px);
+    }
+    [data-testid="stElementContainer"]:has(.pmkr-sedang.active) + [data-testid="stElementContainer"] button[kind="secondary"] {
+        background: linear-gradient(135deg, #EAB308 0%, #CA8A04 100%) !important;
+        border-color: #CA8A04 !important; color: #FFFFFF !important;
+        box-shadow: 0 4px 12px -2px rgba(234,179,8,0.4) !important;
+        font-weight: 700 !important; transform: translateY(-1px);
+    }
+    [data-testid="stElementContainer"]:has(.pmkr-tdksehat.active) + [data-testid="stElementContainer"] button[kind="secondary"] {
+        background: linear-gradient(135deg, #EA580C 0%, #C2410C 100%) !important;
+        border-color: #C2410C !important; color: #FFFFFF !important;
+        box-shadow: 0 4px 12px -2px rgba(234,88,12,0.4) !important;
+        font-weight: 700 !important; transform: translateY(-1px);
+    }
+    [data-testid="stElementContainer"]:has(.pmkr-sgttdksehat.active) + [data-testid="stElementContainer"] button[kind="secondary"] {
+        background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%) !important;
+        border-color: #B91C1C !important; color: #FFFFFF !important;
+        box-shadow: 0 4px 12px -2px rgba(220,38,38,0.4) !important;
+        font-weight: 700 !important; transform: translateY(-1px);
+    }
+    [data-testid="stElementContainer"]:has(.pmkr-berbahaya.active) + [data-testid="stElementContainer"] button[kind="secondary"] {
+        background: linear-gradient(135deg, #7C2D12 0%, #581C87 100%) !important;
+        border-color: #581C87 !important; color: #FFFFFF !important;
+        box-shadow: 0 4px 12px -2px rgba(124,45,18,0.4) !important;
+        font-weight: 700 !important; transform: translateY(-1px);
+    }
+
+    /* ============ RESET BUTTON — :has() selector ============ */
+    [data-testid="stElementContainer"]:has(.reset-marker) + [data-testid="stElementContainer"] button[kind="secondary"] {
         background: #FFFFFF !important;
         border: 1.5px solid #FCA5A5 !important;
         color: #B91C1C !important;
         font-weight: 600 !important;
+        border-radius: 12px !important;
+        padding: 0.55rem 1.2rem !important;
+        font-size: 0.85rem !important;
         transition: all 0.2s ease-in-out !important;
     }
-    .reset-marker + div [data-testid="stBaseButton-secondary"]:hover,
-    .reset-marker + div button[kind="secondary"]:hover {
+    [data-testid="stElementContainer"]:has(.reset-marker) + [data-testid="stElementContainer"] button[kind="secondary"]:hover {
         background: #FEF2F2 !important;
         border-color: #EF4444 !important;
+        color: #991B1B !important;
+        box-shadow: 0 4px 12px -2px rgba(239, 68, 68, 0.25) !important;
+        transform: translateY(-1px);
     }
 
-    /* Badge preset aktif di header hasil */
-    .active-preset-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.4rem;
-        background: #DCFCE7;
-        color: #166534;
-        font-size: 0.78rem;
-        font-weight: 600;
-        padding: 0.3rem 0.7rem;
+    /* ============ SLIDER MINI-CARDS ============ */
+    .slider-card {
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 12px;
+        padding: 0.7rem 0.95rem 0.55rem;
+        margin-bottom: 0.1rem;
+        transition: all 0.2s ease-in-out;
+    }
+    .slider-card:hover {
+        border-color: #CBD5E1;
+        background: #FFFFFF;
+        box-shadow: 0 2px 8px -2px rgba(15, 23, 42, 0.08);
+    }
+    .slider-card-head {
+        display: flex; justify-content: space-between; align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 0.2rem;
+    }
+    .slider-card-label {
+        display: flex; align-items: center; gap: 0.5rem;
+        font-weight: 700; color: #0F172A; font-size: 0.92rem;
+    }
+    .slider-card-dot {
+        width: 0.6rem; height: 0.6rem; border-radius: 999px;
+        flex-shrink: 0;
+    }
+    .slider-card-value {
+        font-weight: 700; font-variant-numeric: tabular-nums;
+        color: #0F172A; font-size: 0.95rem;
+        white-space: nowrap;
+    }
+    .slider-card-unit {
+        font-size: 0.7rem; color: #94A3B8;
+        font-weight: 500; margin-left: 0.2rem;
+    }
+    .slider-card-desc {
+        font-size: 0.74rem; color: #64748B;
+        line-height: 1.4;
+    }
+    /* Group spacing antar item polutan */
+    .polutan-block {
+        margin-bottom: 1.1rem;
+    }
+
+    /* ============ HERO RESULT ============ */
+    .hero-result {
+        background: linear-gradient(135deg, #F8FAFC 0%, #FFFFFF 100%);
+        border-radius: 16px; padding: 1.5rem 1.25rem 1.3rem;
+        border: 1px solid #F1F5F9;
+        text-align: center;
+        margin-bottom: 1rem;
+        position: relative;
+    }
+    .hero-status-pill {
+        display: inline-flex; align-items: center; gap: 0.5rem;
+        padding: 0.4rem 0.95rem;
         border-radius: 999px;
-        border: 1px solid #86EFAC;
+        font-size: 0.8rem; font-weight: 700;
+        letter-spacing: 0.01em;
+        margin-bottom: 0.85rem;
+    }
+    .hero-emoji-inline { font-size: 1.05rem; line-height: 1; }
+    .hero-result-num {
+        font-size: 4.2rem;
+        font-weight: 800;
+        line-height: 0.95;
+        margin: 0.2rem 0 0.1rem;
+        letter-spacing: -0.04em;
+        font-variant-numeric: tabular-nums;
+    }
+    .hero-result-label {
+        font-size: 0.72rem; color: #94A3B8;
+        text-transform: uppercase; letter-spacing: 0.1em;
+        font-weight: 700;
         margin-bottom: 0.6rem;
+    }
+    .hero-result-desc {
+        color: #475569;
+        font-size: 0.83rem;
+        line-height: 1.55;
+        margin-top: 0.7rem;
+        padding: 0 0.3rem;
+    }
+
+    /* ============ REKOMENDASI MODERN BOX ============ */
+    .rekom-modern {
+        border-radius: 14px;
+        padding: 0.95rem 1.05rem;
+        display: flex; gap: 0.7rem; align-items: flex-start;
+        margin-top: 0.9rem;
+        border: 1px solid;
+    }
+    .rekom-modern-icon {
+        width: 1.7rem; height: 1.7rem; border-radius: 8px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.95rem; font-weight: 700;
+        flex-shrink: 0;
+    }
+    .rekom-modern-title {
+        font-size: 0.78rem; font-weight: 700;
+        letter-spacing: 0.02em;
+        margin-bottom: 0.2rem;
+    }
+    .rekom-modern-text {
+        font-size: 0.83rem; color: #334155;
+        line-height: 1.55;
+    }
+
+    /* ============ SUB-INDEKS PROGRESS BARS ============ */
+    .subindex-section {
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 14px;
+        padding: 1rem 1.1rem 0.9rem;
+        margin-top: 1rem;
+    }
+    .subindex-section-title {
+        font-size: 0.78rem; font-weight: 700;
+        color: #0F172A;
+        margin-bottom: 0.7rem;
+        display: flex; justify-content: space-between; align-items: center;
+    }
+    .subindex-section-hint {
+        font-size: 0.66rem; color: #94A3B8;
+        font-weight: 500; letter-spacing: 0.03em;
+    }
+    .subindex-bar-card {
+        background: #FFFFFF;
+        border-radius: 10px;
+        padding: 0.55rem 0.75rem 0.5rem;
+        margin-bottom: 0.45rem;
+        border: 1px solid #F1F5F9;
+        transition: all 0.2s ease-in-out;
+    }
+    .subindex-bar-card.dominan {
+        border-color: #FBBF24;
+        background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%);
+        box-shadow: 0 2px 6px -2px rgba(245, 158, 11, 0.25);
+    }
+    .subindex-bar-head {
+        display: flex; justify-content: space-between; align-items: center;
+        margin-bottom: 0.35rem;
+        font-size: 0.76rem;
+    }
+    .subindex-bar-name {
+        font-weight: 700; color: #0F172A;
+        display: flex; align-items: center; gap: 0.4rem;
+    }
+    .subindex-bar-val {
+        font-variant-numeric: tabular-nums; color: #0F172A;
+        font-weight: 700; font-size: 0.85rem;
+    }
+    .subindex-bar-track {
+        background: #F1F5F9; border-radius: 999px;
+        height: 6px;
+        overflow: hidden;
+        margin-bottom: 0.35rem;
+    }
+    .subindex-bar-fill {
+        height: 100%; border-radius: 999px;
+        transition: width 0.4s ease-out;
+    }
+    .subindex-bar-foot {
+        display: flex; justify-content: flex-start;
+        align-items: center; gap: 0.4rem;
+    }
+
+    /* Pill kategori (Baik/Sedang/Tidak Sehat/dst) */
+    .kat-pill {
+        font-size: 0.6rem;
+        font-weight: 700;
+        padding: 0.12rem 0.5rem;
+        border-radius: 999px;
+        border: 1px solid;
+        white-space: nowrap;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+    /* Badge polutan dominan */
+    .dom-badge {
+        font-size: 0.58rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, #F59E0B, #D97706);
+        color: #FFFFFF;
+        padding: 0.1rem 0.4rem;
+        border-radius: 4px;
+        letter-spacing: 0.05em;
+        box-shadow: 0 1px 3px rgba(245, 158, 11, 0.4);
+    }
+
+    /* Badge preset aktif di header */
+    .active-preset-badge {
+        display: inline-flex; align-items: center; gap: 0.4rem;
+        background: #EFF6FF; color: #1D4ED8;
+        font-size: 0.76rem; font-weight: 600;
+        padding: 0.3rem 0.75rem; border-radius: 999px;
+        border: 1px solid #BFDBFE;
+        margin-bottom: 0.8rem;
     }
     .active-preset-badge .dot {
         width: 0.5rem; height: 0.5rem; border-radius: 50%;
-        background: #16A34A;
-        box-shadow: 0 0 0 3px rgba(22,163,74,0.18);
+        background: #2563EB;
+        box-shadow: 0 0 0 3px rgba(37,99,235,0.18);
     }
 
     /* Fade-in halus tiap kali hasil di-recompute */
@@ -644,47 +932,13 @@ def inject_css():
         from { opacity: 0; transform: translateY(4px); }
         to   { opacity: 1; transform: translateY(0); }
     }
-    .sim-fade {
-        animation: sim-fade-in 0.25s ease-out;
-    }
+    .sim-fade { animation: sim-fade-in 0.25s ease-out; }
 
-    /* Baris sub-indeks polutan di hasil */
-    .subindex-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        font-size: 0.8rem;
-        padding: 0.35rem 0.6rem;
-        border-radius: 8px;
-        margin-bottom: 0.2rem;
-    }
-    .subindex-row.dominan {
-        background: #FEF3C7;
-        font-weight: 700;
-        color: #92400E;
-    }
-    .subindex-row .label { color: #475569; display:flex; align-items:center; gap:0.4rem; }
-    .subindex-row .val   { font-variant-numeric: tabular-nums; color: #0F172A; font-weight: 600; min-width: 2.5rem; text-align:right; }
-
-    /* Pill kategori per polutan (Baik/Sedang/Tidak Sehat/dst) */
-    .kat-pill {
-        font-size: 0.68rem;
-        font-weight: 700;
-        padding: 0.15rem 0.5rem;
-        border-radius: 999px;
-        border: 1px solid transparent;
-        white-space: nowrap;
-        letter-spacing: 0.01em;
-    }
-    /* Badge polutan dominan (⚠ DOMINAN) */
-    .dom-badge {
-        font-size: 0.62rem;
-        font-weight: 800;
-        background: #F59E0B;
-        color: #FFFFFF;
-        padding: 0.1rem 0.4rem;
-        border-radius: 4px;
-        letter-spacing: 0.04em;
+    /* Responsive — mobile: stack sliders, kurangi padding */
+    @media (max-width: 768px) {
+        .sim-card { padding: 1.1rem; border-radius: 16px; }
+        .hero-result-num { font-size: 3.2rem; }
+        .slider-card { padding: 0.7rem 0.85rem; }
     }
 
     /* ============ TABS WILAYAH ============ */
@@ -2099,28 +2353,41 @@ def _detect_active_preset(current_vals: dict):
 
 
 def _polutan_slider_block(pol_key: str):
-    """Render satu slider polutan + label header. Mengembalikan nilai terbaru."""
+    """
+    Render satu slider polutan dalam mini-card style.
+    Mini-card terdiri dari: header (label + nilai realtime), deskripsi singkat,
+    slider Streamlit (lebar penuh), lalu spacer. Mengembalikan nilai terbaru.
+    """
     cfg = SIM_SLIDER_CONFIG[pol_key]
     info = INFO_POLUTAN[cfg["info_key"]]
+    cur_val = float(st.session_state[cfg["slider_key"]])
+
+    # Header mini-card: label + nilai + unit, dot warna polutan, deskripsi
     st.markdown(
-        f"<div style='display:flex; align-items:center; gap:0.4rem; font-weight:600; "
-        f"color:#0F172A; margin-bottom:0.1rem;'>"
-        f"<span style='width:0.7rem; height:0.7rem; border-radius:999px; "
-        f"background:{info['warna']};'></span>{cfg['label']}</div>"
-        f"<div style='font-size:0.78rem; color:#64748B; margin-bottom:0.3rem;'>"
-        f"{info['deskripsi_pendek']}</div>",
+        f"""
+        <div class='slider-card'>
+            <div class='slider-card-head'>
+                <div class='slider-card-label'>
+                    <span class='slider-card-dot' style='background:{info["warna"]};'></span>
+                    {cfg["label"]}
+                </div>
+                <div class='slider-card-value'>
+                    {cur_val:.{cfg["decimals"]}f}<span class='slider-card-unit'>{cfg["unit"]}</span>
+                </div>
+            </div>
+            <div class='slider-card-desc'>{info["deskripsi_pendek"]}</div>
+        </div>
+        """,
         unsafe_allow_html=True,
     )
+    # Slider widget — di luar mini-card karena Streamlit tidak bisa nest widget
+    # dalam HTML kustom. Tarik ke atas dengan margin negatif supaya visual menyatu
+    # dengan mini-card di atasnya.
     val = st.slider(
         cfg["label"], cfg["min"], cfg["max"],
-        value=float(st.session_state[cfg["slider_key"]]),
-        step=cfg["step"], key=cfg["slider_key"],
+        value=cur_val, step=cfg["step"],
+        key=cfg["slider_key"],
         label_visibility="collapsed",
-    )
-    st.markdown(
-        f"<div style='text-align:right; font-size:0.8rem; color:#64748B;'>"
-        f"{val:.{cfg['decimals']}f} ({cfg['unit']})</div>",
-        unsafe_allow_html=True,
     )
     return val
 
@@ -2157,58 +2424,72 @@ def page_simulasi(data):
     # ── Init state (idempoten) ──
     _sim_init_state()
 
-    # Layout: kiri = form polutan, kanan = hasil
-    col_left, col_right = st.columns([1.05, 1], gap="medium")
+    # Layout: kiri lebih lebar untuk input, kanan untuk hasil. Gap besar.
+    col_left, col_right = st.columns([1.15, 1], gap="large")
 
-    # ────────────────────── KIRI: Form polutan ──────────────────────
+    # Mapping nama preset → suffix CSS class supaya warna pill sesuai kategori
+    preset_css_suffix = {
+        "Baik":               "baik",
+        "Sedang":             "sedang",
+        "Tidak Sehat":        "tdksehat",
+        "Sangat Tidak Sehat": "sgttdksehat",
+        "Berbahaya":          "berbahaya",
+    }
+
+    # ─────────── KIRI: Card "Komposisi Polutan" ───────────
     with col_left:
-        st.markdown("<div class='card'>", unsafe_allow_html=True)
-        head = st.columns([5, 1])
-        with head[0]:
-            st.markdown(
-                "<div class='card-title' style='margin-bottom:0.3rem;'>Komposisi Polutan</div>"
-                "<div style='font-size:0.85rem; color:#64748B; line-height:1.5; margin-bottom:1rem;'>"
-                "Sesuaikan slider di bawah untuk mensimulasikan kondisi polutan dan memprediksi "
-                "Indeks Standar Pencemar Udara (ISPU)."
-                "</div>",
-                unsafe_allow_html=True,
-            )
-        with head[1]:
-            st.markdown("<div style='padding-top:0.3rem;'></div>", unsafe_allow_html=True)
-            if st.button("ⓘ Info", key="btn_info_simulasi", use_container_width=True):
-                render_popup_polutan()
+        st.markdown('<div class="sim-card">', unsafe_allow_html=True)
 
-        # ── Preset buttons (highlight via marker div sebelum tombol) ──
+        # Header card: icon + title + desc
         st.markdown(
-            "<div style='margin-bottom:0.5rem; font-size:0.85rem; color:#475569; font-weight:600;'>"
-            "Preset Skenario</div>",
+            """
+            <div class='sim-card-header'>
+                <div class='sim-card-icon'>⚗</div>
+                <div style='flex:1;'>
+                    <div class='sim-card-title'>Komposisi Polutan</div>
+                    <div class='sim-card-desc'>
+                        Atur konsentrasi setiap polutan untuk mensimulasikan kualitas udara.
+                    </div>
+                </div>
+            </div>
+            """,
             unsafe_allow_html=True,
         )
+
+        # ── Preset Skenario ──
+        st.markdown(
+            "<div class='sim-section-label'>Preset Skenario</div>",
+            unsafe_allow_html=True,
+        )
+
         preset_labels = {
-            "Baik":               ("Baik",        "Kualitas udara Baik (ISPU 0–50)"),
-            "Sedang":             ("Sedang",      "Kualitas udara Sedang (ISPU 51–100)"),
-            "Tidak Sehat":        ("Tidak Sehat", "Kualitas udara Tidak Sehat (ISPU 101–200)"),
-            "Sangat Tidak Sehat": ("Sangat",      "Kualitas udara Sangat Tidak Sehat (ISPU 201–300)"),
-            "Berbahaya":          ("Berbahaya",   "Kualitas udara Berbahaya (ISPU ≥ 301)"),
+            "Baik":               ("Baik",        "ISPU 0–50"),
+            "Sedang":             ("Sedang",      "ISPU 51–100"),
+            "Tidak Sehat":        ("Tidak Sehat", "ISPU 101–200"),
+            "Sangat Tidak Sehat": ("Sangat",      "ISPU 201–300"),
+            "Berbahaya":          ("Berbahaya",   "ISPU ≥ 301"),
         }
-        # Aktif diambil dari session_state (di-set callback). Setelah render
-        # selesai, kita re-deteksi berdasar nilai slider terbaru (sinkron 2-arah).
         current_active = st.session_state.get("sim_active_preset")
         pc = st.columns(5, gap="small")
         for col, (name, (label, tip)) in zip(pc, preset_labels.items()):
             with col:
-                marker_cls = "preset-marker-active" if current_active == name else "preset-marker-idle"
-                st.markdown(f'<div class="{marker_cls}"></div>', unsafe_allow_html=True)
+                # Marker class: warna kategori + state active/idle
+                cat_suffix = preset_css_suffix[name]
+                active_mod = " active" if current_active == name else ""
+                st.markdown(
+                    f'<div class="pmkr pmkr-{cat_suffix}{active_mod}"></div>',
+                    unsafe_allow_html=True,
+                )
                 st.button(
-                    label, key=f"preset_{name.lower().replace(' ', '_')}",
-                    use_container_width=True, help=tip,
+                    label, key=f"preset_{cat_suffix}",
+                    use_container_width=True, help=f"Kualitas udara {name} ({tip})",
                     on_click=apply_preset, args=(name,),
                 )
 
-        # ── Pilih model klasifikasi ML ──
+        # ── Model Klasifikasi ──
         st.markdown(
-            "<div style='margin-top:1rem; margin-bottom:0.3rem; font-size:0.85rem; "
-            "color:#475569; font-weight:600;'>Model Klasifikasi</div>",
+            "<div style='margin-top:1.1rem;'></div>"
+            "<div class='sim-section-label'>Model Klasifikasi</div>",
             unsafe_allow_html=True,
         )
         model_label = st.selectbox(
@@ -2225,47 +2506,51 @@ def page_simulasi(data):
         }
         st.session_state["sim_model_choice"] = model_choice_map[model_label]
 
-        st.markdown("<div style='margin-top:1rem;'></div>", unsafe_allow_html=True)
-
-        # ── Sliders 6 polutan, dalam 2 kolom (urutan UI sama dengan sebelumnya) ──
+        # ── Sliders 6 polutan dalam 2 kolom ──
+        st.markdown(
+            "<div style='margin-top:1.2rem;'></div>"
+            "<div class='sim-section-label'>Konsentrasi Polutan</div>",
+            unsafe_allow_html=True,
+        )
         sc1, sc2 = st.columns(2, gap="medium")
         vals = {}
         with sc1:
             vals["pm25"] = _polutan_slider_block("pm25")
-            st.markdown("<div style='margin-top:1rem;'></div>", unsafe_allow_html=True)
             vals["no2"]  = _polutan_slider_block("no2")
-            st.markdown("<div style='margin-top:1rem;'></div>", unsafe_allow_html=True)
             vals["co"]   = _polutan_slider_block("co")
         with sc2:
             vals["pm10"] = _polutan_slider_block("pm10")
-            st.markdown("<div style='margin-top:1rem;'></div>", unsafe_allow_html=True)
             vals["so2"]  = _polutan_slider_block("so2")
-            st.markdown("<div style='margin-top:1rem;'></div>", unsafe_allow_html=True)
             vals["o3"]   = _polutan_slider_block("o3")
 
-        # ── Sinkronisasi 2-arah: kalau user menggeser slider keluar preset,
-        #    badge highlight hilang otomatis pada rerun berikutnya ──
+        # Sinkron 2-arah preset↔slider
         detected = _detect_active_preset(vals)
         if detected != st.session_state.get("sim_active_preset"):
             st.session_state["sim_active_preset"] = detected
 
-        # ── Tombol Reset (Submit dihilangkan, hasil sudah realtime) ──
-        st.markdown("<div style='margin-top:1.5rem;'></div>", unsafe_allow_html=True)
-        bc1, bc2 = st.columns([1, 3])
+        # ── Tombol Info & Reset di footer card ──
+        st.markdown(
+            "<div style='border-top:1px solid #F1F5F9; margin-top:1.2rem; padding-top:1rem;'></div>",
+            unsafe_allow_html=True,
+        )
+        bc1, bc2, _bc3 = st.columns([1.4, 1.2, 2])
         with bc1:
             st.markdown('<div class="reset-marker"></div>', unsafe_allow_html=True)
             st.button(
-                "↺ Reset", key="btn_reset",
+                "↺ Reset Semua", key="btn_reset",
                 type="secondary", use_container_width=True,
                 on_click=reset_simulation,
-                help="Kembalikan semua slider ke nilai default & hapus preset aktif.",
+                help="Kembalikan semua slider ke 0 & hapus preset aktif.",
             )
+        with bc2:
+            if st.button("ⓘ Info Polutan", key="btn_info_simulasi", use_container_width=True):
+                render_popup_polutan()
 
-        st.markdown("</div>", unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)  # /sim-card
 
-    # ────────────────────── KANAN: Hasil prediksi (REALTIME) ──────────────────────
+    # ─────────── KANAN: Card "Hasil Prediksi ISPU" ───────────
     with col_right:
-        # Hitung ISPU + ML tiap rerun berdasarkan nilai slider terkini.
+        # Hitung ISPU realtime tiap rerun
         nilai_ispu, kategori, polutan_dominan, subindeks = calculate_ispu_category(
             pm10=vals["pm10"], pm25=vals["pm25"], so2=vals["so2"],
             co=vals["co"],   o3=vals["o3"],     no2=vals["no2"],
@@ -2281,27 +2566,9 @@ def page_simulasi(data):
             ml_model_used = ml.get("model_used", "XGBoost")
             ml_confidence = ml.get("confidence")
         except Exception:
-            ml_kategori = None
-            ml_model_used = None
-            ml_confidence = None
+            ml_kategori = ml_model_used = ml_confidence = None
 
         info = KATEGORI_INFO[kategori]
-
-        st.markdown("<div class='card'>", unsafe_allow_html=True)
-        st.markdown("<div class='card-title'>Hasil Prediksi ISPU</div>", unsafe_allow_html=True)
-
-        # Badge preset aktif (kalau ada)
-        active_name = st.session_state.get("sim_active_preset")
-        if active_name:
-            st.markdown(
-                f"<div class='active-preset-badge'><span class='dot'></span>"
-                f"Preset aktif: <strong>{active_name}</strong></div>",
-                unsafe_allow_html=True,
-            )
-
-        # State netral = semua polutan 0 (mis. setelah klik Reset).
-        # Saat netral, tetap tampilkan struktur penuh tapi dengan label
-        # "Belum Ada Simulasi" supaya jelas ini bukan hasil yang valid.
         is_neutral = (nilai_ispu == 0)
         status_text = "Belum Ada Simulasi" if is_neutral else f"Udara {kategori}"
         deskripsi_text = (
@@ -2312,37 +2579,78 @@ def page_simulasi(data):
             "Belum ada rekomendasi — silakan atur nilai polutan terlebih dahulu."
             if is_neutral else info["rekomendasi"]
         )
+        # Warna status pill: netral pakai abu, kategori valid pakai warna kategori
+        if is_neutral:
+            status_bg, status_color = "#F1F5F9", "#64748B"
+        else:
+            status_bg, status_color = info["warna_bg"], info["warna"]
 
-        # Hero result — angka ISPU + emoji + status
+        st.markdown('<div class="sim-card">', unsafe_allow_html=True)
+
+        # Header card
         st.markdown(
-            f"""
-            <div class='hasil-hero sim-fade'>
-                <div>
-                    <div class='hasil-num' style='color:{info["warna"]};'>{nilai_ispu:.0f}</div>
-                    <div class='hasil-label-ispu'>ISPU</div>
+            """
+            <div class='sim-card-header'>
+                <div class='sim-card-icon icon-result'>📊</div>
+                <div style='flex:1;'>
+                    <div class='sim-card-title'>Hasil Prediksi ISPU</div>
+                    <div class='sim-card-desc'>
+                        Hasil klasifikasi kualitas udara diperbarui secara real-time.
+                    </div>
                 </div>
-                <div>
-                    <div style='font-size:2.5rem; line-height:1;'>{info["emoji"]}</div>
-                    <div class='ispu-status' style='color:{info["warna"]}; margin-top:0.4rem;'>{status_text}</div>
-                    <div class='ispu-desc'>{deskripsi_text}</div>
-                </div>
-            </div>
-
-            <div class='rekom-box sim-fade' style='border:1px solid {info["warna"]}40; background:{info["warna_bg"]};'>
-                <div class='rekom-box-title' style='color:{info["warna"]};'>Rekomendasi Aktivitas</div>
-                <div class='rekom-box-text' style='color:#334155;'>{rekom_text}</div>
             </div>
             """,
             unsafe_allow_html=True,
         )
 
-        # Sub-indeks tiap polutan. Setiap baris diberi:
-        #  - label kategori (Baik/Sedang/Tidak Sehat/dst) dari get_ispu_category()
-        #  - warna sesuai kategori (KATEGORI_INFO[...]["warna"])
-        #  - badge ⚠ untuk polutan dominan (yang menentukan ISPU final)
-        # Tujuan: user langsung paham kontribusi tiap polutan dan kenapa
-        # nilai tertentu (mis. CO=9) bisa "kelihatan" tinggi padahal slidernya
-        # tidak penuh — karena breakpoint CO memang sangat sensitif.
+        # Badge preset aktif
+        active_name = st.session_state.get("sim_active_preset")
+        if active_name:
+            st.markdown(
+                f"<div class='active-preset-badge'><span class='dot'></span>"
+                f"Preset aktif: <strong>{active_name}</strong></div>",
+                unsafe_allow_html=True,
+            )
+
+        # Hero result block (status pill + angka ISPU besar + deskripsi)
+        st.markdown(
+            f"""
+            <div class='hero-result sim-fade'>
+                <div class='hero-status-pill'
+                     style='background:{status_bg}; color:{status_color};'>
+                    <span class='hero-emoji-inline'>{info["emoji"]}</span>
+                    {status_text}
+                </div>
+                <div class='hero-result-num' style='color:{info["warna"]};'>
+                    {nilai_ispu:.0f}
+                </div>
+                <div class='hero-result-label'>Indeks Standar Pencemar Udara</div>
+                <div class='hero-result-desc'>{deskripsi_text}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        # Rekomendasi modern box
+        st.markdown(
+            f"""
+            <div class='rekom-modern sim-fade'
+                 style='background:{info["warna_bg"]};
+                        border-color:{info["warna"]}40;'>
+                <div class='rekom-modern-icon'
+                     style='background:{info["warna"]}; color:#FFFFFF;'>ⓘ</div>
+                <div style='flex:1;'>
+                    <div class='rekom-modern-title' style='color:{info["warna"]};'>
+                        Rekomendasi Aktivitas
+                    </div>
+                    <div class='rekom-modern-text'>{rekom_text}</div>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        # ── Sub-Indeks per Polutan dengan progress bars ──
         rows_html = ""
         for pol, sub_val in sorted(subindeks.items(), key=lambda kv: -kv[1]):
             is_dom = (not is_neutral) and (pol == polutan_dominan)
@@ -2350,13 +2658,14 @@ def page_simulasi(data):
             sub_info = KATEGORI_INFO[sub_kategori]
             sub_warna = sub_info["warna"]
             sub_warna_bg = sub_info["warna_bg"]
+            # Progress bar width (0-500 scale)
+            bar_pct = min(100.0, (sub_val / 500.0) * 100.0)
+            # CSS class & badge
             dom_cls = " dominan" if is_dom else ""
             dom_badge = (
-                "<span class='dom-badge' title='Polutan dominan — sub-indeks tertinggi'>⚠ DOMINAN</span>"
+                "<span class='dom-badge' title='Polutan dominan'>⚠ DOMINAN</span>"
                 if is_dom else ""
             )
-            # Saat netral (semua 0), sembunyikan label kategori supaya tidak
-            # menyiratkan "Baik" yang seolah-olah hasil pengukuran valid.
             if is_neutral:
                 kat_pill = ""
             else:
@@ -2366,38 +2675,50 @@ def page_simulasi(data):
                     f"{sub_kategori}</span>"
                 )
             rows_html += (
-                f"<div class='subindex-row{dom_cls}'>"
-                f"<span class='label'>{POLUTAN_DISPLAY_NAME[pol]}{dom_badge}</span>"
-                f"<span style='display:flex; align-items:center; gap:0.5rem;'>"
-                f"{kat_pill}"
-                f"<span class='val'>{sub_val:.1f}</span>"
-                f"</span>"
+                f"<div class='subindex-bar-card{dom_cls}'>"
+                f"  <div class='subindex-bar-head'>"
+                f"    <span class='subindex-bar-name'>{POLUTAN_DISPLAY_NAME[pol]}{dom_badge}</span>"
+                f"    <span class='subindex-bar-val'>{sub_val:.1f}</span>"
+                f"  </div>"
+                f"  <div class='subindex-bar-track'>"
+                f"    <div class='subindex-bar-fill' "
+                f"         style='width:{bar_pct:.1f}%; background:{sub_warna};'></div>"
+                f"  </div>"
+                f"  <div class='subindex-bar-foot'>{kat_pill}</div>"
                 f"</div>"
             )
+
         st.markdown(
-            "<div style='margin-top:1rem; font-size:0.8rem; color:#475569; font-weight:600; margin-bottom:0.4rem;'>"
-            "Sub-Indeks per Polutan"
-            "</div>" + rows_html,
+            f"""
+            <div class='subindex-section sim-fade'>
+                <div class='subindex-section-title'>
+                    <span>Sub-Indeks per Polutan</span>
+                    <span class='subindex-section-hint'>skala 0 — 500</span>
+                </div>
+                {rows_html}
+            </div>
+            """,
             unsafe_allow_html=True,
         )
 
         # Pembanding klasifikasi Model ML
-        if ml_kategori is not None:
+        if ml_kategori is not None and not is_neutral:
             conf_txt = f" (keyakinan {ml_confidence*100:.1f}%)" if ml_confidence is not None else ""
             st.markdown(
                 f"""
                 <div class='info-box' style='margin-top:1rem;'>
                     <div class='info-box-icon'>ⓘ</div>
                     <div class='info-box-text'>
-                        Nilai ISPU dihitung dengan formula sub-indeks PerMenLHK 14/2020.<br>
-                        Klasifikasi model <strong>{ml_model_used}</strong>: <strong>{ml_kategori}</strong>{conf_txt}.
+                        ISPU dihitung dengan formula sub-indeks PerMenLHK 14/2020.<br>
+                        Klasifikasi model <strong>{ml_model_used}</strong>:
+                        <strong>{ml_kategori}</strong>{conf_txt}.
                     </div>
                 </div>
                 """,
                 unsafe_allow_html=True,
             )
 
-        st.markdown("</div>", unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)  # /sim-card
 
 
 # ================================================================
