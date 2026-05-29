@@ -2731,85 +2731,113 @@ def page_edukasi(data):
         unsafe_allow_html=True,
     )
 
-    # Section 1: Mengenal ISPU + 5 kategori
-    st.markdown("<div class='card'>", unsafe_allow_html=True)
+    # Hover halus untuk mini-card tips (scoped, dirender sekali)
     st.markdown(
-        "<div class='card-title'>Mengenal ISPU (Indeks Standar Pencemar Udara)</div>"
-        "<div style='font-size:0.88rem; color:#475569; margin-bottom:1.2rem; line-height:1.5;'>"
-        "ISPU digunakan untuk menggambarkan kualitas udara ambien di sekitar kita."
-        "</div>",
+        """
+        <style>
+        .edu-tip { transition: transform .2s ease, box-shadow .2s ease; }
+        .edu-tip:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 24px rgba(15,23,42,.10);
+            background: #FFFFFF;
+        }
+        </style>
+        """,
         unsafe_allow_html=True,
     )
 
-    kc = st.columns(5, gap="small")
-    for col, (nama, info) in zip(kc, KATEGORI_INFO.items()):
-        with col:
-            st.markdown(
-                f"""
-                <div class='kat-card' style='background:{info["warna_bg"]}; border-color:{info["warna"]}40;'>
-                    <div style='display:flex; justify-content:space-between; align-items:flex-start;'>
-                        <div class='kat-range' style='color:{info["warna"]};'>{info["rentang"]}</div>
-                        <div class='kat-emoji'>{info["emoji"]}</div>
-                    </div>
-                    <div class='kat-name' style='color:{info["warna"]};'>{nama}</div>
-                    <div class='kat-desc'>{info["deskripsi"]}</div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-    st.markdown("</div>", unsafe_allow_html=True)
-
-    st.markdown("<div style='margin-top:1.2rem;'></div>", unsafe_allow_html=True)
-
-    # Section 2: Dampak Kesehatan + Sumber Polusi
-    dc1, dc2 = st.columns([1.4, 1], gap="medium")
-
-    # Dampak Kesehatan
-    with dc1:
-        st.markdown("<div class='card'>", unsafe_allow_html=True)
+    # ============================================================
+    # Section 1: Mengenal ISPU + 5 kategori
+    # FIX: pakai st.container(border=True) (FIX #3) agar judul + kartu
+    #      kategori berada DI DALAM card, bukan floating di luar.
+    # ============================================================
+    with st.container(border=True):
         st.markdown(
-            "<div class='card-title'>Dampak Kualitas Udara terhadap Kesehatan</div>",
+            "<div class='card-title'>Mengenal ISPU (Indeks Standar Pencemar Udara)</div>"
+            "<div style='font-size:0.88rem; color:#475569; margin-bottom:1.2rem; line-height:1.5;'>"
+            "ISPU digunakan untuk menggambarkan kualitas udara ambien di sekitar kita."
+            "</div>",
             unsafe_allow_html=True,
         )
 
-        dampak = [
-            ("🫁", "Sistem Pernapasan", "Polusi udara dapat menyebabkan iritasi, batuk, sesak napas, dan memperparah asma."),
-            ("❤️", "Sistem Kardiovaskular", "Paparan jangka panjang meningkatkan risiko penyakit jantung dan tekanan darah tinggi."),
-            ("👶", "Anak-anak", "Anak lebih rentan terhadap infeksi pernapasan dan gangguan perkembangan paru-paru."),
-            ("👴", "Lansia", "Risiko penyakit kronis meningkat, terutama jika memiliki riwayat penyakit."),
-        ]
-        dr1, dr2 = st.columns(2, gap="medium")
-        for idx, (icon, judul, desc) in enumerate(dampak):
-            with (dr1 if idx % 2 == 0 else dr2):
+        kc = st.columns(5, gap="small")
+        for col, (nama, info) in zip(kc, KATEGORI_INFO.items()):
+            with col:
                 st.markdown(
                     f"""
-                    <div style='display:flex; gap:0.85rem; align-items:flex-start; margin-bottom:1.2rem;'>
-                        <div style='font-size:1.8rem; flex-shrink:0; line-height:1;'>{icon}</div>
-                        <div>
-                            <div style='font-size:0.95rem; font-weight:700; color:#0F172A; margin-bottom:0.25rem;'>{judul}</div>
-                            <div style='font-size:0.82rem; color:#475569; line-height:1.5;'>{desc}</div>
+                    <div class='kat-card' style='background:{info["warna_bg"]}; border-color:{info["warna"]}40;'>
+                        <div style='display:flex; justify-content:space-between; align-items:flex-start;'>
+                            <div class='kat-range' style='color:{info["warna"]};'>{info["rentang"]}</div>
+                            <div class='kat-emoji'>{info["emoji"]}</div>
                         </div>
+                        <div class='kat-name' style='color:{info["warna"]};'>{nama}</div>
+                        <div class='kat-desc'>{info["deskripsi"]}</div>
                     </div>
                     """,
                     unsafe_allow_html=True,
                 )
-        st.markdown("</div>", unsafe_allow_html=True)
 
-    # Sumber Polusi - donut chart
+    st.markdown("<div style='margin-top:1.2rem;'></div>", unsafe_allow_html=True)
+
+    # ============================================================
+    # Section 2: Dampak Kesehatan + Sumber Polusi (2 kolom)
+    # ============================================================
+    dc1, dc2 = st.columns([1.4, 1], gap="medium")
+
+    # --- Dampak Kesehatan ---
+    with dc1:
+        with st.container(border=True):
+            st.markdown(
+                "<div class='card-title'>Dampak Kualitas Udara terhadap Kesehatan</div>"
+                "<div style='font-size:0.88rem; color:#475569; margin-bottom:1.1rem; line-height:1.5;'>"
+                "Pengaruh polusi udara terhadap berbagai kelompok dan sistem tubuh."
+                "</div>",
+                unsafe_allow_html=True,
+            )
+
+            dampak = [
+                ("🫁", "Sistem Pernapasan", "Polusi udara dapat menyebabkan iritasi, batuk, sesak napas, dan memperparah asma."),
+                ("❤️", "Sistem Kardiovaskular", "Paparan jangka panjang meningkatkan risiko penyakit jantung dan tekanan darah tinggi."),
+                ("👶", "Anak-anak", "Anak lebih rentan terhadap infeksi pernapasan dan gangguan perkembangan paru-paru."),
+                ("🧓", "Lansia", "Risiko penyakit kronis meningkat, terutama jika memiliki riwayat penyakit."),
+            ]
+            dr1, dr2 = st.columns(2, gap="medium")
+            for idx, (icon, judul, desc) in enumerate(dampak):
+                with (dr1 if idx % 2 == 0 else dr2):
+                    st.markdown(
+                        f"""
+                        <div style='display:flex; gap:0.85rem; align-items:flex-start;
+                                    background:#F8FAFC; border:1px solid #EEF2F7; border-radius:14px;
+                                    padding:0.9rem 1rem; margin-bottom:0.85rem; min-height:108px;'>
+                            <div style='font-size:1.6rem; flex-shrink:0; line-height:1;'>{icon}</div>
+                            <div>
+                                <div style='font-size:0.95rem; font-weight:700; color:#0F172A; margin-bottom:0.25rem;'>{judul}</div>
+                                <div style='font-size:0.82rem; color:#475569; line-height:1.5;'>{desc}</div>
+                            </div>
+                        </div>
+                        """,
+                        unsafe_allow_html=True,
+                    )
+
+    # --- Sumber Polusi (donut chart) ---
     with dc2:
-        st.markdown("<div class='card'>", unsafe_allow_html=True)
-        st.markdown("<div class='card-title'>Sumber Polusi Udara di Jakarta</div>", unsafe_allow_html=True)
+        with st.container(border=True):
+            st.markdown(
+                "<div class='card-title'>Sumber Polusi Udara di Jakarta</div>"
+                "<div style='font-size:0.88rem; color:#475569; margin-bottom:0.6rem; line-height:1.5;'>"
+                "Estimasi kontribusi tiap sektor."
+                "</div>",
+                unsafe_allow_html=True,
+            )
 
-        sumber = {
-            "Transportasi": (45, "#2563EB"),
-            "Industri": (20, "#16A34A"),
-            "Aktivitas Rumah Tangga": (15, "#F59E0B"),
-            "Konstruksi": (10, "#EF4444"),
-            "Lainnya": (10, "#7C3AED"),
-        }
+            sumber = {
+                "Transportasi": (45, "#2563EB"),
+                "Industri": (20, "#16A34A"),
+                "Aktivitas Rumah Tangga": (15, "#F59E0B"),
+                "Konstruksi": (10, "#EF4444"),
+                "Lainnya": (10, "#7C3AED"),
+            }
 
-        chart_col, leg_col = st.columns([1, 1.1], gap="small")
-        with chart_col:
             fig = go.Figure(go.Pie(
                 labels=list(sumber.keys()),
                 values=[v[0] for v in sumber.values()],
@@ -2820,63 +2848,65 @@ def page_edukasi(data):
                 hovertemplate="<b>%{label}</b><br>%{value}%<extra></extra>",
             ))
             fig.update_layout(
-                height=240,
-                margin=dict(l=0, r=0, t=10, b=10),
+                height=210,
+                margin=dict(l=0, r=0, t=4, b=4),
                 showlegend=False,
-                paper_bgcolor="white",
+                paper_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor="rgba(0,0,0,0)",
             )
             st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
-        with leg_col:
-            st.markdown("<div style='padding-top:1rem;'>", unsafe_allow_html=True)
+            # Legend — SATU blok HTML agar tidak bocor keluar card
+            legend_html = "<div style='padding-top:0.4rem;'>"
             for nama, (pct, warna) in sumber.items():
+                legend_html += (
+                    f"<div class='donut-legend-row'>"
+                    f"<div class='donut-legend-left'>"
+                    f"<div class='donut-legend-dot' style='background:{warna};'></div>"
+                    f"<span>{nama}</span></div>"
+                    f"<div class='donut-legend-pct'>{pct}%</div>"
+                    f"</div>"
+                )
+            legend_html += "</div>"
+            st.markdown(legend_html, unsafe_allow_html=True)
+
+    st.markdown("<div style='margin-top:1.2rem;'></div>", unsafe_allow_html=True)
+
+    # ============================================================
+    # Section 3: Tips Kesehatan
+    # ============================================================
+    with st.container(border=True):
+        st.markdown(
+            "<div class='card-title'>💡 Tips Menjaga Kesehatan Saat Kualitas Udara Tidak Sehat</div>"
+            "<div style='font-size:0.88rem; color:#475569; margin-bottom:1.1rem; line-height:1.5;'>"
+            "Langkah praktis untuk melindungi diri ketika polusi udara meningkat."
+            "</div>",
+            unsafe_allow_html=True,
+        )
+
+        tips = [
+            ("😷",  "Gunakan Masker",       "Gunakan masker berstandar untuk mengurangi paparan polusi udara."),
+            ("🚫",  "Batasi Aktivitas Luar","Kurangi aktivitas fisik berat di luar ruangan, terutama saat sore hingga malam hari."),
+            ("🌬️", "Ventilasi yang Baik",  "Tutup jendela saat polusi tinggi dan pastikan ventilasi rumah tetap berfungsi baik."),
+            ("💧",  "Perbanyak Minum Air",  "Cairan tubuh yang cukup membantu mengurangi efek polutan pada tubuh."),
+            ("🌀",  "Gunakan Air Purifier", "Jika memungkinkan, gunakan alat penyaring udara di dalam ruangan untuk udara lebih bersih."),
+        ]
+        tc = st.columns(5, gap="medium")
+        for col, (icon, judul, desc) in zip(tc, tips):
+            with col:
                 st.markdown(
                     f"""
-                    <div class='donut-legend-row'>
-                        <div class='donut-legend-left'>
-                            <div class='donut-legend-dot' style='background:{warna};'></div>
-                            <span>{nama}</span>
-                        </div>
-                        <div class='donut-legend-pct'>{pct}%</div>
+                    <div class='edu-tip' style='background:#F8FAFC; border:1px solid #EEF2F7; border-radius:16px;
+                                padding:1.1rem; height:100%;'>
+                        <div style='width:2.6rem; height:2.6rem; border-radius:12px; background:#EAF1FF;
+                                    display:flex; align-items:center; justify-content:center;
+                                    font-size:1.3rem; margin-bottom:0.7rem;'>{icon}</div>
+                        <div style='font-size:0.95rem; font-weight:700; color:#0F172A; margin-bottom:0.4rem;'>{judul}</div>
+                        <div style='font-size:0.78rem; color:#64748B; line-height:1.5;'>{desc}</div>
                     </div>
                     """,
                     unsafe_allow_html=True,
                 )
-            st.markdown("</div>", unsafe_allow_html=True)
-
-        st.markdown("</div>", unsafe_allow_html=True)
-
-    st.markdown("<div style='margin-top:1.2rem;'></div>", unsafe_allow_html=True)
-
-    # Section 3: Tips Kesehatan
-    st.markdown("<div class='card'>", unsafe_allow_html=True)
-    st.markdown(
-        "<div class='card-title'>💡 Tips Menjaga Kesehatan Saat Kualitas Udara Tidak Sehat</div>",
-        unsafe_allow_html=True,
-    )
-
-    tips = [
-        ("😷",  "Gunakan Masker",       "Gunakan masker berstandar untuk mengurangi paparan polusi udara."),
-        ("❌",  "Batasi Aktivitas Luar","Kurangi aktivitas fisik berat di luar ruangan, terutama saat sore hingga malam hari."),
-        ("💨",  "Ventilasi yang Baik",  "Tutup jendela saat polusi tinggi dan pastikan ventilasi rumah tetap berfungsi baik."),
-        ("💧",  "Perbanyak Minum Air",  "Cairan tubuh yang cukup membantu mengurangi efek polutan pada tubuh."),
-        ("🌬️", "Gunakan Air Purifier", "Jika memungkinkan, gunakan alat penyaring udara di dalam ruangan untuk udara lebih bersih."),
-    ]
-    tc = st.columns(5, gap="medium")
-    for col, (icon, judul, desc) in zip(tc, tips):
-        with col:
-            st.markdown(
-                f"""
-                <div style='background:#FFFFFF; border:1px solid #E2E8F0; border-radius:14px;
-                            padding:1.1rem; height:100%; transition:all 0.25s ease;'>
-                    <div style='font-size:2rem; color:#2563EB; margin-bottom:0.6rem; line-height:1;'>{icon}</div>
-                    <div style='font-size:0.95rem; font-weight:700; color:#0F172A; margin-bottom:0.4rem;'>{judul}</div>
-                    <div style='font-size:0.78rem; color:#64748B; line-height:1.5;'>{desc}</div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-    st.markdown("</div>", unsafe_allow_html=True)
 
 
 # ================================================================
